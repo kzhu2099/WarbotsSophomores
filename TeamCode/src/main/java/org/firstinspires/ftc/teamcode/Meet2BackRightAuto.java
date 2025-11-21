@@ -28,22 +28,29 @@
  */
 
 package org.firstinspires.ftc.teamcode;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-@Autonomous(name="Meet 1: FL Auto", group="Robot")
-public class Meet1FrontLeftAuto extends LinearOpMode {
+@Autonomous(name="Meet 2: BR Auto", group="Robot")
+public class Meet2BackRightAuto extends OpMode {
 
     private ElapsedTime runtime = new ElapsedTime();
+    private Robot robot;
 
-    @Override
-    public void runOpMode() {
+    public void loop() {
+        robot.bottomRightAutoLoop();
+    }
 
-        Robot robot = new Robot(hardwareMap, telemetry);
-        robot.setPowers(new double[] {1, 1, 1, 1});
-        robot.delay(0.35);
-        robot.zeroPowers();
+    public void init () {
+         robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2, true);
+
+         robot.init();
+    }
+
+    public void start () {
+        robot.start();
     }
 }

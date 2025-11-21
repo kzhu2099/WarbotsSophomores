@@ -1,35 +1,9 @@
-/* Copyright (c) 2021 FIRST. All rights reserved.
- * TESTING TESTING
- *
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted (subject to the limitations in the disclaimer below) provided that
- * the following conditions are met:
- *
- * Redistributions of source code must retain the above copyright notice, this list
- * of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright notice, this
- * list of conditions and the following disclaimer in the documentation and/or
- * other materials provided with the distribution.
- *
- * Neither the name of FIRST nor the names of its contributors may be used to endorse or
- * promote products derived from this software without specific prior written permission.
- *
- * NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY THIS
- * LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
- * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
 package org.firstinspires.ftc.teamcode;
 
+import com.pedropathing.geometry.BezierCurve;
+import com.pedropathing.geometry.Curve;
+import com.pedropathing.geometry.CustomCurve;
+import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -38,26 +12,36 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.GoBildaOdometryPods;
+import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
+
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+
+import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.BezierLine;
+import com.pedropathing.geometry.Pose;
+import com.pedropathing.paths.Path;
+import com.pedropathing.paths.PathChain;
+import com.pedropathing.util.Timer;
 
 public class Robot {
 
     private HardwareMap hardwareMap;
     private Telemetry telemetry;
-    // Declare OpMode members for each of the 4 motors.
+    private Gamepad gamepad1;
+    private Gamepad gamepad2;
+
     private ElapsedTime runtime = new ElapsedTime();
     private DcMotor frontLeftDrive;
     private DcMotor backLeftDrive;
     private DcMotor frontRightDrive;
     private DcMotor backRightDrive;
-
     private DcMotor intakeMotor;
     private DcMotorEx outtakeLeftMotor;
     private DcMotorEx outtakeRightMotor;
-
-    // private CRServo frontServo;
     private CRServo backServo;
-    
-    // private static final double OUTTAKEPOWER = 0.95;
+
     private static final double SENSITIVITY = 0.05;
     private static final double SERVOPOWER = 1;
     private static final double INTAKEPOWER = 0.7;
@@ -68,10 +52,17 @@ public class Robot {
     private static double frontOuttakeAngularRate;
     private static double backOuttakeAngularRate;
     private static double emergencyOuttakeAngularRate;
+    private static final double UPTOSPEEDTHRESHOLD = 0.99;
+    private Follower follower;
+    private static boolean redAlliance;
 
-    public Robot (HardwareMap _hardwareMap, Telemetry _telemetry) {
-        this.hardwareMap = _hardwareMap;
-        this.telemetry = _telemetry;
+    public Robot (HardwareMap hardwareMap, Telemetry telemetry, Gamepad gamepad1, Gamepad gamepad2, boolean redAlliance) {
+        this.hardwareMap = hardwareMap;
+        this.telemetry = telemetry;
+        this.gamepad1 = gamepad1;
+        this.gamepad2 = gamepad2;
+
+        this.redAlliance = redAlliance;
 
         frontLeftDrive = hardwareMap.get(DcMotor.class, "fl");
         backLeftDrive = hardwareMap.get(DcMotor.class, "bl");
@@ -84,6 +75,7 @@ public class Robot {
 
         // frontServo = hardwareMap.get(CRServo.class, "Front Servo");
         backServo = hardwareMap.get(CRServo.class, "bs");
+        // odometry = hardwareMap.get(GoBildaPinpointDriver.class, "odom");
 
         frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
         backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
@@ -107,45 +99,79 @@ public class Robot {
         telemetry.update();
     }
 
-    public void teleOpDrive (Gamepad gamepad1, Gamepad gamepad2) {
-        double max;
+    private PathChain scorePreload;
+    private PathChain autoAimPath;
 
-        double axial   = -gamepad1.left_stick_y;  // Note: pushing stick forward gives negative value
-        double lateral =  gamepad1.left_stick_x;
-        double yaw     =  gamepad1.right_stick_x;
+    private int currentPath;
+    private int teleOpState;
+
+    private Pose startingPose;
+    private Pose scoringPose;
+
+    public void buildAutoPaths() {
+        scorePreload = follower.pathBuilder()
+                .addPath(new BezierLine(startingPose, scoringPose))
+                .setLinearHeadingInterpolation(startingPose.getHeading(), scoringPose.getHeading())
+                .build();
+    }
+
+    public void teleOpLoop () {
+        follower.update();
+        if (gamepad1.bWasPressed() && !follower.isBusy()) {
+            teleOpState = 1;
+            buildAutoAimPath();
+            follower.followPath(autoAimPath);
+        }
+
+        if (teleOpState == 1) {
+            telemetry.addData("autoaim", autoAimPath.getPath(0).getPose(1));
+        }
+
+        if (teleOpState == 0) {
+            boolean slowMove = gamepad1.right_trigger > SENSITIVITY;
+            if (!slowMove) {
+                double axial = -gamepad1.left_stick_y;  // Note: pushing stick forward gives negative value
+                double lateral = -gamepad1.left_stick_x;
+                double yaw = -gamepad1.right_stick_x;
+
+                follower.setTeleOpDrive(axial, lateral, yaw, true);
+            }
+
+            else {
+                double axial = -gamepad1.left_stick_y * 0.5;  // Note: pushing stick forward gives negative value
+                double lateral = -gamepad1.left_stick_x * 0.5;
+                double yaw = -gamepad1.right_stick_x * 0.5;
+
+                follower.setTeleOpDrive(axial, lateral, yaw, true);
+            }
+
+            /*
+            boolean slowMove = gamepad1.right_trigger > SENSITIVITY;
+
+            double slowSpeed = slowMove ? 0.5 : 1.0;
+            double frontLeftPower = slowSpeed * (axial + lateral + yaw);
+            double frontRightPower = slowSpeed * (axial - lateral - yaw);
+            double backLeftPower = slowSpeed * (axial - lateral + yaw);
+            double backRightPower = slowSpeed * (axial + lateral - yaw);
+
+            frontLeftDrive.setPower(frontLeftPower);
+            frontRightDrive.setPower(frontRightPower);
+            backLeftDrive.setPower(backLeftPower);
+            backRightDrive.setPower(backRightPower);
+            */
+        }
+
+        else if (teleOpState == 1) {
+            if (!follower.isBusy()) {
+                teleOpState = 0;
+                follower.startTeleopDrive(true);
+            }
+        }
 
         boolean intakeOn = gamepad2.left_trigger > SENSITIVITY;
         boolean outtakeOn = gamepad2.right_trigger > SENSITIVITY;
         boolean backShoot = gamepad2.right_bumper;
         boolean emergencyShoot = gamepad2.left_bumper;
-        boolean backServoOn = gamepad2.y;
-        boolean slowMove = gamepad1.right_trigger > SENSITIVITY;
-
-        double slowSpeed = slowMove ? 0.5 : 1.0;
-        double frontLeftPower  = slowSpeed * (axial + lateral + yaw);
-        double frontRightPower = slowSpeed * (axial - lateral - yaw);
-        double backLeftPower   = slowSpeed * (axial - lateral + yaw);
-        double backRightPower  = slowSpeed * (axial + lateral - yaw);
-
-        // double frontServoPower = (frontServoOn) ? SERVOPOWER : 0;
-        double backServoPower = (backServoOn) ? SERVOPOWER : 0;
-
-        max = Math.max(1, Math.abs(frontLeftPower));
-        max = Math.max(max, Math.abs(frontRightPower));
-        max = Math.max(max, Math.abs(backLeftPower));
-        max = Math.max(max, Math.abs(backRightPower));
-
-        if (max > 1.0) {
-            frontLeftPower  /= max;
-            frontRightPower /= max;
-            backLeftPower   /= max;
-            backRightPower  /= max;
-        }
-
-        frontLeftDrive.setPower(frontLeftPower);
-        frontRightDrive.setPower(frontRightPower);
-        backLeftDrive.setPower(backLeftPower);
-        backRightDrive.setPower(backRightPower);
 
         intakeMotor.setPower(intakeOn ? INTAKEPOWER : 0);
 
@@ -155,27 +181,88 @@ public class Robot {
         outtakeLeftMotor.setVelocity(outtakeOn ? angularRate : 0);
         outtakeRightMotor.setVelocity(outtakeOn ? angularRate : 0);
 
-        // frontServo.setPower(frontServoPower);
+        boolean outtakeUpToSpeed = checkUpToSpeed(outtakeLeftMotor, angularRate) && checkUpToSpeed(outtakeRightMotor, angularRate);
+
+        boolean backServoOn = gamepad2.y && outtakeUpToSpeed;
+        double backServoPower = (backServoOn) ? SERVOPOWER : 0;
         backServo.setPower(backServoPower);
 
         telemetry.addData("Status", "Run Time: " + runtime.toString());
-        telemetry.addData("Front left/Right", "%4.2f, %4.2f", frontLeftPower, frontRightPower);
-        telemetry.addData("Back  left/Right", "%4.2f, %4.2f", backLeftPower, backRightPower);
         telemetry.addData("intake status", "%b, %4.2f", intakeOn, INTAKEPOWER);
         telemetry.addData("outtake status", "%b, %4.2f", outtakeOn, angularRate);
-        telemetry.addData("outtake back shoot status", "%b", backShoot);
-        telemetry.addData("outtake emergency shoot status", "%b", emergencyShoot);
-
-        // telemetry.addData("front servo status", "%b, %4.2f", frontServoOn, frontServoPower);
         telemetry.addData("back servo status", "%b, %4.2f", backServoOn, backServoPower);
+        telemetry.addData("driving status", teleOpState);
+        telemetry.addData("follower is busy", follower.isBusy());
+        odometryTelemetry();
+
         telemetry.update();
     }
 
-    public void setPowers (double[] powers) {
-        frontLeftDrive.setPower(powers[0]);
-        frontRightDrive.setPower(powers[1]);
-        backLeftDrive.setPower(powers[2]);
-        backRightDrive.setPower(powers[3]);
+    public void buildAutoAimPath () {
+        Pose currentPose = follower.getPose();
+        double x = currentPose.getX();
+        double y = currentPose.getY();
+        double heading;
+        Pose targetPose;
+        Pose intermediatePose;
+
+        int k = 10;
+        if (redAlliance) {
+            heading = Math.atan((140 - (y)) / (140 - (x - 9))) + Math.PI; // middle of robot, turn to outtake
+            intermediatePose = new Pose(x + k, y + k, heading);
+            targetPose = new Pose(x, y, heading);
+
+            autoAimPath = follower.pathBuilder()
+                    .addPath(new BezierLine(currentPose, intermediatePose))
+                    .setLinearHeadingInterpolation(currentPose.getHeading(), heading)
+                    .addPath(new BezierLine(intermediatePose, targetPose))
+                    .setLinearHeadingInterpolation(heading, heading)
+                    .build();
+        }
+    }
+
+    public void bottomRightAutoLoop() {
+        follower.update();
+
+        switch (currentPath) {
+            case 0:
+                follower.followPath(scorePreload);
+
+                if (!follower.isBusy()) {
+                    currentPath += 1;
+                }
+
+                break;
+        }
+
+        odometryTelemetry();
+    }
+
+    public void init () {
+        follower = Constants.createFollower(hardwareMap);
+
+        if (redAlliance) {
+            scoringPose = new Pose (104, 38, Math.toRadians(90));
+        }
+    }
+
+    public void start () {
+        currentPath = 0;
+        teleOpState = 0;
+
+        startingPose = FollowerPose.pose;
+        follower.setStartingPose(startingPose);
+
+        buildAutoPaths();
+
+        follower.startTeleopDrive(true);
+    }
+
+    public void stop () {
+        follower.setXVelocity(0);
+        follower.setYVelocity(0);
+
+        FollowerPose.setEndingPose(follower.getPose());
     }
 
     public void delay (double time) {
@@ -183,6 +270,13 @@ public class Robot {
         while (runtime.seconds() - startTime < time) {
             telemetry.addData("delay", runtime.seconds() - startTime);
         }
+    }
+
+    public void setPowers (double[] powers) {
+        frontLeftDrive.setPower(powers[0]);
+        frontRightDrive.setPower(powers[1]);
+        backLeftDrive.setPower(powers[2]);
+        backRightDrive.setPower(powers[3]);
     }
 
     public void zeroPowers() {
@@ -197,5 +291,15 @@ public class Robot {
         double angularRate = (backShoot) ? backOuttakeAngularRate : frontOuttakeAngularRate;
         outtakeLeftMotor.setVelocity(status ? angularRate : 0);
         outtakeRightMotor.setVelocity(status ? angularRate : 0);
+    }
+
+    public boolean checkUpToSpeed (DcMotorEx motor, double targetSpeed) {
+        return motor.getVelocity() >= UPTOSPEEDTHRESHOLD * targetSpeed;
+    }
+
+    public void odometryTelemetry () {
+        telemetry.addData("position x", follower.getPose().getX());
+        telemetry.addData("position y", follower.getPose().getY());
+        telemetry.addData("position rotation", Math.toDegrees(follower.getHeading()));
     }
 }

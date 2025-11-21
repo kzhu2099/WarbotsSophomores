@@ -28,31 +28,35 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode.archives;
+package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.teamcode.Robot;
-
-@TeleOp(name="_Archived Test TeleOp", group="Linear OpMode")
+@TeleOp(name="Meet 2: TeleOp", group="Linear OpMode")
 // @Disabled
-public class TestTeleOp extends LinearOpMode {
+public class Meet2TeleOp extends OpMode {
 
     // Declare OpMode members for each of the 4 motors.
     private ElapsedTime runtime = new ElapsedTime();
+    private Robot robot;
 
-    @Override
-    public void runOpMode() {
+    public void loop() {
+        robot.teleOpLoop();
+    }
 
-        Robot robot = new Robot(hardwareMap, telemetry);
+    public void init () {
+        robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2, true);
+        FollowerPose.setStartingPose(Poses.BR); // only temporary
+        robot.init();
+    }
 
-        waitForStart();
-        runtime.reset();
+    public void start () {
+        robot.start();
+    }
 
-        while (opModeIsActive()) {
-            robot.teleOpDrive(gamepad1, gamepad2);
-        }
+    public void stop () {
+        robot.stop();
     }
 }

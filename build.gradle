@@ -21,6 +21,9 @@ allprojects {
     repositories {
         mavenCentral()
         google()
+
+        // ADD THIS LINE for Pedro Pathing
+        maven { url = "https://mymaven.bylazar.com/releases" }
     }
 }
 
