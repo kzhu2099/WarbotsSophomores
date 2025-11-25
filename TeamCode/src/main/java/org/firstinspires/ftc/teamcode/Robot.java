@@ -318,6 +318,7 @@ public class Robot {
                     paths = buildAutoCyclePaths(backRightScoringPose, new Pose(72 + cycleEndDX, rowTrigger, 90));
                     autoCycle(paths[0], paths[1], false, true);
                     break;
+                // test
             }
         }
 
