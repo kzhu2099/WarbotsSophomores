@@ -27,20 +27,19 @@ enum cycles {
 
 public class Robot {
 
-    private HardwareMap hardwareMap;
-    private Telemetry telemetry;
-    private Gamepad gamepad1;
-    private Gamepad gamepad2;
+    private final HardwareMap hardwareMap;
+    private final Telemetry telemetry;
+    private final Gamepad gamepad1;
+    private final Gamepad gamepad2;
 
-    private ElapsedTime runtime = new ElapsedTime();
-    private DcMotor frontLeftDrive;
-    private DcMotor backLeftDrive;
-    private DcMotor frontRightDrive;
-    private DcMotor backRightDrive;
-    private DcMotor intakeMotor;
-    private DcMotorEx outtakeLeftMotor;
-    private DcMotorEx outtakeRightMotor;
-    private CRServo backServo;
+    private final DcMotor frontLeftDrive;
+    private final DcMotor backLeftDrive;
+    private final DcMotor frontRightDrive;
+    private final DcMotor backRightDrive;
+    private final DcMotor intakeMotor;
+    private final DcMotorEx outtakeLeftMotor;
+    private final DcMotorEx outtakeRightMotor;
+    private final CRServo backServo;
 
     private static final double SENSITIVITY = 0.05;
     private static final double SERVOPOWER = 1;
@@ -188,7 +187,6 @@ public class Robot {
         double backServoPower = (backServoOn) ? SERVOPOWER : 0;
         backServo.setPower(backServoPower);
 
-        telemetry.addData("Status", "Run Time: " + runtime.toString());
         telemetry.addData("intake status", "%b, %4.2f", intakeOn, INTAKEPOWER);
         telemetry.addData("outtake status", "%b, %4.2f", outtakeOn, angularRate);
         telemetry.addData("back servo status", "%b, %4.2f", backServoOn, backServoPower);
@@ -502,13 +500,6 @@ public class Robot {
         follower.setYVelocity(0);
 
         FollowerPose.setEndingPose(follower.getPose());
-    }
-
-    public void delay (double time) {
-        double startTime = runtime.seconds();
-        while (runtime.seconds() - startTime < time) {
-            telemetry.addData("delay", runtime.seconds() - startTime);
-        }
     }
 
     public void setPowers (double[] powers) {
