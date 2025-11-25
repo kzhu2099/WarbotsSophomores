@@ -38,21 +38,26 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 // @Disabled
 public class Meet2TeleOp extends OpMode {
 
-    // Declare OpMode members for each of the 4 motors.
-    private ElapsedTime runtime = new ElapsedTime();
     private Robot robot;
+    private startingPoses[] allStartingPoses = startingPoses.values();
+    private static int startingSelection = 0;
 
     public void loop() {
         robot.teleOpLoop();
+        telemetry.update();
     }
 
     public void init () {
         robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2, true);
-        FollowerPose.setStartingPose(Poses.BR); // only temporary
         robot.init();
     }
 
+    public void init_loop () {
+        robot.teleOpInitLoop();
+    }
+
     public void start () {
+        FollowerPose.setStartingPose(allStartingPoses[startingSelection]); // only temporary
         robot.start();
     }
 

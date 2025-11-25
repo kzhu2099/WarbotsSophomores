@@ -1,9 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.pedropathing.geometry.BezierCurve;
-import com.pedropathing.geometry.Curve;
-import com.pedropathing.geometry.CustomCurve;
-import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -12,18 +9,20 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
-import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver.GoBildaOdometryPods;
-import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
-
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
-import com.pedropathing.paths.Path;
 import com.pedropathing.paths.PathChain;
-import com.pedropathing.util.Timer;
+
+enum cycles {
+    None,
+    BR_Preload,
+    BR_I,
+    BR_II,
+    BR_III,
+    BR_Trigger,
+}
 
 public class Robot {
 
@@ -52,9 +51,16 @@ public class Robot {
     private static double frontOuttakeAngularRate;
     private static double backOuttakeAngularRate;
     private static double emergencyOuttakeAngularRate;
-    private static final double UPTOSPEEDTHRESHOLD = 0.99;
+    private static final double UPTOSPEEDTHRESHOLD = 1; // measuring velocity is not always accurate so this will be triggered
+
+    public static final double WIDTH = 17.5;
+    public static final double LENGTH = 17;
+    public static final double HW = WIDTH / 2;
+    public static final double HL = LENGTH / 2;
+
     private Follower follower;
     private static boolean redAlliance;
+    private cycles[] autoCycleList;
 
     public Robot (HardwareMap hardwareMap, Telemetry telemetry, Gamepad gamepad1, Gamepad gamepad2, boolean redAlliance) {
         this.hardwareMap = hardwareMap;
@@ -99,21 +105,11 @@ public class Robot {
         telemetry.update();
     }
 
-    private PathChain scorePreload;
-    private PathChain autoAimPath;
-
-    private int currentPath;
-    private int teleOpState;
-
-    private Pose startingPose;
-    private Pose scoringPose;
-
-    public void buildAutoPaths() {
-        scorePreload = follower.pathBuilder()
-                .addPath(new BezierLine(startingPose, scoringPose))
-                .setLinearHeadingInterpolation(startingPose.getHeading(), scoringPose.getHeading())
-                .build();
+    public void setCycleList (cycles[] autoCycleList) {
+        this.autoCycleList = autoCycleList;
     }
+
+    private PathChain autoAimPath;
 
     public void teleOpLoop () {
         follower.update();
@@ -123,27 +119,31 @@ public class Robot {
             follower.followPath(autoAimPath);
         }
 
-        if (teleOpState == 1) {
-            telemetry.addData("autoaim", autoAimPath.getPath(0).getPose(1));
+        if (autoAimPath != null) {
+            telemetry.addData("autoaim", Math.toDegrees(autoAimPath.getPath(1).getPose(1).getHeading()));
         }
 
         if (teleOpState == 0) {
             boolean slowMove = gamepad1.right_trigger > SENSITIVITY;
-            if (!slowMove) {
-                double axial = -gamepad1.left_stick_y;  // Note: pushing stick forward gives negative value
-                double lateral = -gamepad1.left_stick_x;
-                double yaw = -gamepad1.right_stick_x;
+            double axial;
+            double lateral;
+            double yaw;
 
-                follower.setTeleOpDrive(axial, lateral, yaw, true);
+            if (!slowMove) {
+                axial = -gamepad1.left_stick_y;  // Note: pushing stick forward gives negative value
+                lateral = -gamepad1.left_stick_x;
+                yaw = -gamepad1.right_stick_x;
             }
 
             else {
-                double axial = -gamepad1.left_stick_y * 0.5;  // Note: pushing stick forward gives negative value
-                double lateral = -gamepad1.left_stick_x * 0.5;
-                double yaw = -gamepad1.right_stick_x * 0.5;
-
-                follower.setTeleOpDrive(axial, lateral, yaw, true);
+                axial = -gamepad1.left_stick_y * 0.5;  // Note: pushing stick forward gives negative value
+                lateral = -gamepad1.left_stick_x * 0.5;
+                yaw = -gamepad1.right_stick_x * 0.5;
             }
+
+            axial = redAlliance ? axial : -axial;
+            lateral = redAlliance ? lateral : -lateral;
+            follower.setTeleOpDrive(axial, lateral, yaw, false);
 
             /*
             boolean slowMove = gamepad1.right_trigger > SENSITIVITY;
@@ -193,9 +193,8 @@ public class Robot {
         telemetry.addData("back servo status", "%b, %4.2f", backServoOn, backServoPower);
         telemetry.addData("driving status", teleOpState);
         telemetry.addData("follower is busy", follower.isBusy());
-        odometryTelemetry();
 
-        telemetry.update();
+        odometryTelemetry();
     }
 
     public void buildAutoAimPath () {
@@ -208,52 +207,232 @@ public class Robot {
 
         int k = 10;
         if (redAlliance) {
-            heading = Math.atan((140 - (y)) / (140 - (x - 9))) + Math.PI; // middle of robot, turn to outtake
-            intermediatePose = new Pose(x + k, y + k, heading);
+            heading = Math.atan((140 - (y)) / (140 - (x - HW))) + Math.PI; // middle of robot, turn to outtake
+            intermediatePose = new Pose(x + k, y + k, heading / 2);
             targetPose = new Pose(x, y, heading);
 
             autoAimPath = follower.pathBuilder()
                     .addPath(new BezierLine(currentPose, intermediatePose))
-                    .setLinearHeadingInterpolation(currentPose.getHeading(), heading)
+                    .setLinearHeadingInterpolation(currentPose.getHeading(), intermediatePose.getHeading())
                     .addPath(new BezierLine(intermediatePose, targetPose))
-                    .setLinearHeadingInterpolation(heading, heading)
+                    .setLinearHeadingInterpolation(intermediatePose.getHeading(), heading)
                     .build();
         }
     }
 
-    public void bottomRightAutoLoop() {
+    private int shootingTime = 4000;
+    private int cycleNumber;
+    private int teleOpState;
+    private int autoCycleState;
+
+    public boolean triggerTrigger;
+
+    private Pose startingPose;
+    private Pose backRightScoringPose;
+    private Pose frontRightScoringPose;
+    private Pose backLeftScoringPose;
+    private Pose frontLeftScoringPose;
+
+    private static final double scoringDX = 14;
+    private static final double cycleEndDX = 30;
+    private static final double bottomCycleEndDXCorrection = 0;
+    private static final double backScoringY = 15;
+    private static final double frontScoringY = 100;
+
+    private static final double rowI = 36;
+    private static final double rowII = 60;
+    private static final double rowIII = 84;
+    private static final double rowTrigger = 72;
+
+    private PathChain BRPreloadGo;
+
+    public void buildScoringPoses () {
+        double backAngle = Math.atan((140 - backScoringY) / (68 - scoringDX)) + Math.toRadians(180);
+        backRightScoringPose = new Pose (72 + scoringDX, backScoringY, backAngle);
+        frontRightScoringPose = new Pose (72 + scoringDX, 100, Math.toRadians(90));
+        backLeftScoringPose = new Pose (72 - scoringDX, 38, Math.toRadians(90));
+        frontLeftScoringPose = new Pose (72 - scoringDX, 100, Math.toRadians(90));
+    }
+
+    public void buildOtherAutoPaths () {
+        BRPreloadGo = follower.pathBuilder()
+                .addPath(new BezierLine(startingPose, backRightScoringPose))
+                .setLinearHeadingInterpolation(startingPose.getHeading(), backRightScoringPose.getHeading())
+                .build();
+    }
+
+    public PathChain[] buildAutoCyclePaths (Pose start, Pose end) {
+        Pose control = new Pose(start.getX(), end.getY());
+        PathChain path1 = follower.pathBuilder()
+                .addPath(new BezierCurve(start, control, end))
+                .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
+                .build();
+
+        PathChain path2 = follower.pathBuilder()
+                .addPath(new BezierCurve(end, control, start))
+                .setLinearHeadingInterpolation(end.getHeading(), start.getHeading())
+                .build();
+
+        return new PathChain[] {path1, path2};
+    }
+
+    public void autoLoop () {
         follower.update();
 
-        switch (currentPath) {
-            case 0:
-                follower.followPath(scorePreload);
+        cycles currentCycle;
 
-                if (!follower.isBusy()) {
-                    currentPath += 1;
-                }
+        if (cycleNumber < autoCycleList.length) {
+            currentCycle = autoCycleList[cycleNumber];
+        }
 
-                break;
+        else {
+            currentCycle = cycles.None;
+        }
+
+        if (!follower.isBusy() || autoCycleState == 0) { // won't change if it is busy, the == 0 shouldn't happen
+            PathChain[] paths;
+            switch (currentCycle) {
+                case None:
+                    break;
+
+                case BR_Preload:
+                    autoCycle(BRPreloadGo, null, true, true);
+                    break;
+
+                case BR_I:
+                    paths = buildAutoCyclePaths(backRightScoringPose, new Pose(72 + cycleEndDX + bottomCycleEndDXCorrection, rowI, 0));
+                    autoCycle(paths[0], paths[1], true, true);
+                    break;
+
+                case BR_II:
+                    paths = buildAutoCyclePaths(backRightScoringPose, new Pose(72 + cycleEndDX + bottomCycleEndDXCorrection, rowII, 0));
+                    autoCycle(paths[0], paths[1], true, true);
+                    break;
+
+                case BR_III:
+                    paths = buildAutoCyclePaths(backRightScoringPose, new Pose(72 + cycleEndDX, rowIII, 0));
+                    autoCycle(paths[0], paths[1], true, true);
+                    break;
+
+                case BR_Trigger:
+                    paths = buildAutoCyclePaths(backRightScoringPose, new Pose(72 + cycleEndDX, rowTrigger, 90));
+                    autoCycle(paths[0], paths[1], false, true);
+                    break;
+            }
         }
 
         odometryTelemetry();
+
+        telemetry.addData("auto number", cycleNumber);
+        telemetry.addData("cycle state", autoCycleState);
+        telemetry.addData("cycle", currentCycle);
+    }
+
+    public void autoCycle (PathChain go, PathChain back, boolean useBalls, boolean backShootPower) {
+        switch (autoCycleState) {
+            case -1:
+                break;
+
+            case 0:
+                if (go != null) {
+                    follower.followPath(go);
+
+                    if (useBalls) {
+                        setIntake(true);
+                    }
+                }
+
+                autoCycleState++;
+
+            case 1:
+                if (!follower.isBusy()) {
+                    if (useBalls) {
+                        setIntake(false);
+                        setOuttake(true, backShootPower);
+                    }
+
+                    if (back != null) {
+                        follower.followPath(back);
+                    }
+
+                    autoCycleState++;
+                }
+
+            case 2:
+                if (!useBalls) {
+                    autoCycleState = 0;
+                    cycleNumber++;
+                }
+
+                else if (checkUpToSpeed(outtakeLeftMotor, (backShootPower) ? backOuttakeAngularRate : frontOuttakeAngularRate)
+                                && !follower.isBusy()) {
+
+                    autoCycleState = -1; // prevent 2 again but also not 0
+
+                    Thread thread = new Thread(() -> {
+                        setBackServo(true);
+                        setIntake(true);
+
+                        try {
+                            Thread.sleep(shootingTime);
+                        } catch (Exception e) {
+                        }
+
+                        setBackServo(false);
+                        setIntake(false);
+                        setOuttake(false, backShootPower);
+
+                        autoCycleState = 0;
+                        cycleNumber++;
+                    });
+
+                    thread.start();
+                }
+        }
     }
 
     public void init () {
         follower = Constants.createFollower(hardwareMap);
+    }
 
-        if (redAlliance) {
-            scoringPose = new Pose (104, 38, Math.toRadians(90));
+    private static final startingPoses[] allStartingPoses = startingPoses.values();
+    private static int startingSelection = 0;
+
+    public void teleOpInitLoop () {
+        if (gamepad1.dpadRightWasPressed()) {
+            startingSelection = (startingSelection + 1) % allStartingPoses.length;
         }
+
+        else if (gamepad1.dpadLeftWasPressed()) {
+            startingSelection = (startingSelection - 1 + allStartingPoses.length) % allStartingPoses.length;
+        }
+
+        telemetry.addData("starting pose", allStartingPoses[startingSelection]);
+        telemetry.update();
+    }
+
+    public void autoInitLoop () {
+        if (gamepad1.leftBumperWasPressed()) {
+            triggerTrigger = false;
+        }
+
+        else if (gamepad1.rightBumperWasPressed()) {
+            triggerTrigger = true;
+        }
+
+        telemetry.addData("triggering reset for balls", triggerTrigger);
+        telemetry.update();
     }
 
     public void start () {
-        currentPath = 0;
+        cycleNumber = 0;
         teleOpState = 0;
 
         startingPose = FollowerPose.pose;
         follower.setStartingPose(startingPose);
 
-        buildAutoPaths();
+        buildScoringPoses();
+        buildOtherAutoPaths();
 
         follower.startTeleopDrive(true);
     }
@@ -291,6 +470,10 @@ public class Robot {
         double angularRate = (backShoot) ? backOuttakeAngularRate : frontOuttakeAngularRate;
         outtakeLeftMotor.setVelocity(status ? angularRate : 0);
         outtakeRightMotor.setVelocity(status ? angularRate : 0);
+    }
+
+    public void setBackServo (boolean status) {
+        backServo.setPower(status ? 1 : 0);
     }
 
     public boolean checkUpToSpeed (DcMotorEx motor, double targetSpeed) {

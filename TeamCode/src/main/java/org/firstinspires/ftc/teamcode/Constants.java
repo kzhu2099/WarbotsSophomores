@@ -14,21 +14,21 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 public class Constants {
     public static FollowerConstants followerConstants = new FollowerConstants()
-            .mass(16.2)
-            .forwardZeroPowerAcceleration(-25.9346931313679598)
-            .lateralZeroPowerAcceleration(-67.342491844080064)
+            .mass(13) // estimate from Mack: 25 pounds, overestimate is better
+            .forwardZeroPowerAcceleration(-42.4)
+            .lateralZeroPowerAcceleration(-73.3)
             .translationalPIDFCoefficients(new PIDFCoefficients(
-                    0.03,
-                    0,
-                    0,
-                    0.015
+                    0.5,
+                    0.01,
+                    0.1,
+                    0
             ))
             .translationalPIDFSwitch(4)
             .secondaryTranslationalPIDFCoefficients(new PIDFCoefficients(
-                    0.4,
-                    0,
-                    0.005,
-                    0.0006
+                    0.05,
+                    0.0001,
+                    0.01,
+                    0
             ))
             .headingPIDFCoefficients(new PIDFCoefficients(
                     0.8,
@@ -60,6 +60,7 @@ public class Constants {
             .centripetalScaling(0.0005);
 
     public static MecanumConstants driveConstants = new MecanumConstants()
+            .maxPower(1)
             .leftFrontMotorName("fl")
             .leftRearMotorName("bl")
             .rightFrontMotorName("fr")
@@ -68,12 +69,12 @@ public class Constants {
             .leftRearMotorDirection(DcMotorSimple.Direction.REVERSE)
             .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
             .rightRearMotorDirection(DcMotorSimple.Direction.FORWARD)
-            .xVelocity(78.261926752421046666666666666667)
-            .yVelocity(61.494551922189565);
+            .xVelocity(75.9)
+            .yVelocity(52.74);
 
     public static PinpointConstants localizerConstants = new PinpointConstants()
-            .forwardPodY(0.75)
-            .strafePodX(-6.6)
+            .forwardPodY(3)
+            .strafePodX(-5.75)
             .hardwareMapName("odom")
             .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED)
             .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD);
