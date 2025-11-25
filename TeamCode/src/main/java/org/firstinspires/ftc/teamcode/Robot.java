@@ -58,6 +58,8 @@ public class Robot {
     public static final double HW = WIDTH / 2;
     public static final double HL = LENGTH / 2;
 
+    private static double ERRORCOUNT = 0;
+
     private Follower follower;
     private static boolean redAlliance;
     private cycles[] autoCycleList;
@@ -193,7 +195,7 @@ public class Robot {
         telemetry.addData("driving status", teleOpState);
         telemetry.addData("follower is busy", follower.isBusy());
 
-        odometryTelemetry();
+        allTelemetry();
     }
 
     public void buildAutoAimPath () {
@@ -219,8 +221,8 @@ public class Robot {
         }
     }
 
-    private int shootingTime = 4000;
-    private int triggerTime = 1000;
+    private static final int shootingTime = 4000;
+    private static final  int triggerTime = 1000;
     private int cycleNumber;
     private int teleOpState;
     private int autoCycleState;
@@ -333,7 +335,7 @@ public class Robot {
             }
         }
 
-        odometryTelemetry();
+        allTelemetry();
 
         telemetry.addData("auto number", cycleNumber);
         telemetry.addData("cycle state", autoCycleState);
@@ -394,7 +396,7 @@ public class Robot {
                         try {
                             Thread.sleep(shootingTime);
                         } catch (Exception e) {
-
+                            ERRORCOUNT++;
                         }
 
                         setBackServo(false);
@@ -438,7 +440,7 @@ public class Robot {
                         try {
                             Thread.sleep(triggerTime);
                         } catch (Exception e) {
-
+                            ERRORCOUNT++;
                         }
 
                         follower.followPath(comeBack);
@@ -466,6 +468,8 @@ public class Robot {
         }
 
         telemetry.addData("starting pose", allStartingPoses[startingSelection]);
+        allTelemetry();
+
         telemetry.update();
     }
 
@@ -479,6 +483,8 @@ public class Robot {
         }
 
         telemetry.addData("triggering reset for balls", triggerTrigger);
+        allTelemetry();
+
         telemetry.update();
     }
 
@@ -531,9 +537,10 @@ public class Robot {
         return motor.getVelocity() >= UPTOSPEEDTHRESHOLD * targetSpeed;
     }
 
-    public void odometryTelemetry () {
+    public void allTelemetry () {
         telemetry.addData("position x", follower.getPose().getX());
         telemetry.addData("position y", follower.getPose().getY());
         telemetry.addData("position rotation", Math.toDegrees(follower.getHeading()));
+        telemetry.addData("errors caught", ERRORCOUNT);
     }
 }
