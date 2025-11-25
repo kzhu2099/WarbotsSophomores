@@ -2,13 +2,6 @@ package org.firstinspires.ftc.teamcode;
 
 import com.pedropathing.geometry.Pose;
 
-enum startingPoses {
-    CURRENT,
-    BR,
-    BL,
-    C
-}
-
 public class FollowerPose {
     public static Pose pose = new Pose(0, 0, 0);
     public static final double startingDX = 24;

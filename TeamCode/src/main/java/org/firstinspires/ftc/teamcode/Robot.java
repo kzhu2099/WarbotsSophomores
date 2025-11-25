@@ -1,13 +1,11 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.pedropathing.geometry.BezierCurve;
-import com.pedropathing.paths.Path;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 
@@ -16,15 +14,6 @@ import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 
-enum cycles {
-    None,
-    BR_Preload,
-    BR_I,
-    BR_II,
-    BR_III,
-    BR_Trigger,
-}
-
 public class Robot {
 
     private final HardwareMap hardwareMap;
@@ -32,10 +21,10 @@ public class Robot {
     private final Gamepad gamepad1;
     private final Gamepad gamepad2;
 
-    private final DcMotor frontLeftDrive;
+    /*private final DcMotor frontLeftDrive;
     private final DcMotor backLeftDrive;
     private final DcMotor frontRightDrive;
-    private final DcMotor backRightDrive;
+    private final DcMotor backRightDrive;*/
     private final DcMotor intakeMotor;
     private final DcMotorEx outtakeLeftMotor;
     private final DcMotorEx outtakeRightMotor;
@@ -62,7 +51,7 @@ public class Robot {
 
     private Follower follower;
     private static boolean redAlliance;
-    private cycles[] autoCycleList;
+    private autoCycles[] autoCycleList;
 
     public Robot (HardwareMap hardwareMap, Telemetry telemetry, Gamepad gamepad1, Gamepad gamepad2, boolean _redAlliance) {
         this.hardwareMap = hardwareMap;
@@ -72,10 +61,10 @@ public class Robot {
 
         redAlliance = _redAlliance;
 
-        frontLeftDrive = hardwareMap.get(DcMotor.class, "fl");
+        /*frontLeftDrive = hardwareMap.get(DcMotor.class, "fl");
         backLeftDrive = hardwareMap.get(DcMotor.class, "bl");
         frontRightDrive = hardwareMap.get(DcMotor.class, "fr");
-        backRightDrive = hardwareMap.get(DcMotor.class, "br");
+        backRightDrive = hardwareMap.get(DcMotor.class, "br");*/
 
         intakeMotor = hardwareMap.get(DcMotor.class, "in");
         outtakeLeftMotor = (DcMotorEx) hardwareMap.get(DcMotor.class, "lo");
@@ -85,10 +74,10 @@ public class Robot {
         backServo = hardwareMap.get(CRServo.class, "bs");
         // odometry = hardwareMap.get(GoBildaPinpointDriver.class, "odom");
 
-        frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
+        /*frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
         backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
         frontRightDrive.setDirection(DcMotor.Direction.FORWARD);
-        backRightDrive.setDirection(DcMotor.Direction.FORWARD);
+        backRightDrive.setDirection(DcMotor.Direction.FORWARD);*/
 
         intakeMotor.setDirection(DcMotor.Direction.REVERSE);
         outtakeLeftMotor.setDirection(DcMotor.Direction.REVERSE);
@@ -107,7 +96,7 @@ public class Robot {
         telemetry.update();
     }
 
-    public void setCycleList (cycles[] autoCycleList) {
+    public void setAutoCycleList(autoCycles[] autoCycleList) {
         this.autoCycleList = autoCycleList;
     }
 
@@ -222,7 +211,8 @@ public class Robot {
     }
 
     private static final int shootingTime = 4000;
-    private static final  int triggerTime = 1000;
+    private static final int triggerTime = 1000;
+    private int triggerCycleNumber;
     private int cycleNumber;
     private int teleOpState;
     private int autoCycleState;
@@ -241,7 +231,7 @@ public class Robot {
     private static final double cycleEndDX = 30;
     private static final double bottomCycleEndDXCorrection = 0;
     private static final double backScoringY = 15;
-    private static final double frontScoringY = 100;
+    private static final double frontScoringY = 100; // this has not been tested yet, TODO!
 
     private static final double rowI = 36;
     private static final double rowII = 60;
@@ -267,6 +257,8 @@ public class Robot {
                 .addPath(new BezierLine(startingPose, backRightScoringPose))
                 .setLinearHeadingInterpolation(startingPose.getHeading(), backRightScoringPose.getHeading())
                 .build();
+
+        // TODO: LITERALLY FIX EVERYTHING MAKE SURE IT WORKS THEN REPEAT FOR NEXT 3 THEN NEW BOT GNG
     }
 
     public PathChain[] buildAutoCyclePaths (Pose start, Pose end) {
@@ -287,45 +279,45 @@ public class Robot {
     public void autoLoop () {
         follower.update();
 
-        cycles currentCycle;
+        autoCycles currentCycle;
 
         if (cycleNumber < autoCycleList.length) {
             currentCycle = autoCycleList[cycleNumber];
         }
 
         else {
-            currentCycle = cycles.None;
+            currentCycle = autoCycles.NONE;
         }
 
         if (!follower.isBusy() || autoCycleState == 0) { // won't change if it is busy, the == 0 shouldn't happen
             PathChain[] paths;
             switch (currentCycle) {
-                case None:
+                case NONE:
                     break;
 
-                case BR_Preload:
-                    autoCycle(BRPreloadGo, null, true, true, false);
+                case BR_PRELOAD:
+                    autoCycle(BRPreloadGo, null, true, true);
                     break;
 
                 case BR_I:
                     paths = buildAutoCyclePaths(backRightScoringPose, new Pose(72 + cycleEndDX + bottomCycleEndDXCorrection, rowI, 0));
-                    autoCycle(paths[0], paths[1], true, true, false);
+                    autoCycle(paths[0], paths[1], true, true);
                     break;
 
                 case BR_II:
                     paths = buildAutoCyclePaths(backRightScoringPose, new Pose(72 + cycleEndDX + bottomCycleEndDXCorrection, rowII, 0));
-                    autoCycle(paths[0], paths[1], true, true, triggerTrigger);
+                    autoCycle(paths[0], paths[1], true, true);
                     break;
 
                 case BR_III:
                     paths = buildAutoCyclePaths(backRightScoringPose, new Pose(72 + cycleEndDX, rowIII, 0));
-                    autoCycle(paths[0], paths[1], true, true, false);
+                    autoCycle(paths[0], paths[1], true, true);
                     break;
 
-                case BR_Trigger:
+                case BR_TRIGGER:
                     if (triggerTrigger) {
                         paths = buildAutoCyclePaths(backRightScoringPose, rightTriggerPose);
-                        autoCycle(paths[0], paths[1], false, true, false);
+                        autoCycle(paths[0], paths[1], false, true);
                         break;
                     }
 
@@ -342,7 +334,7 @@ public class Robot {
         telemetry.addData("cycle", currentCycle);
     }
 
-    public void autoCycle (PathChain go, PathChain back, boolean useBalls, boolean backShootPower, boolean triggerReset) {
+    public void autoCycle (PathChain go, PathChain back, boolean useBalls, boolean backShootPower) {
         switch (autoCycleState) {
             case -1:
                 break;
@@ -356,7 +348,7 @@ public class Robot {
                     }
                 }
 
-                if (triggerReset) {
+                if (triggerCycleNumber != -1 && triggerCycleNumber == cycleNumber) {
                     autoCycleState = 10;
                 }
 
@@ -484,7 +476,24 @@ public class Robot {
             triggerTrigger = true;
         }
 
+        if (gamepad2.leftBumperWasPressed()) { // init is where the cycle list is called
+            triggerCycleNumber = Math.max(-1, triggerCycleNumber - 1);
+        }
+
+        else if (gamepad2.rightBumperWasPressed()) {
+            triggerCycleNumber = Math.min(autoCycleList.length - 1, triggerCycleNumber + 1);
+        }
+
         telemetry.addData("triggering reset for balls", triggerTrigger);
+
+        autoCycles cycle;
+        if (triggerCycleNumber == -1) {
+            cycle = autoCycles.NONE;
+        }
+        else {
+            cycle = autoCycleList[triggerCycleNumber];
+        }
+        telemetry.addData("the cycle during which the trigger will be triggered", cycle);
         allTelemetry();
 
         telemetry.update();

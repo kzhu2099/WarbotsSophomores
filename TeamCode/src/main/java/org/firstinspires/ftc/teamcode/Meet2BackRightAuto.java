@@ -31,7 +31,6 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
-import com.qualcomm.robotcore.util.ElapsedTime;
 
 @Autonomous(name="Meet 2: BR Auto", group="Robot")
 public class Meet2BackRightAuto extends OpMode {
@@ -47,13 +46,12 @@ public class Meet2BackRightAuto extends OpMode {
         robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2, true);
         robot.init();
 
-        robot.setCycleList(
-            new cycles[] {
-                cycles.BR_Preload,
-                cycles.BR_Trigger,
-                cycles.BR_I,
-                cycles.BR_II,
-                cycles.BR_III
+        robot.setAutoCycleList(
+            new autoCycles[] {
+                autoCycles.BR_PRELOAD, // 0
+                autoCycles.BR_I,
+                autoCycles.BR_II,
+                autoCycles.BR_III
             }
         );
     }
