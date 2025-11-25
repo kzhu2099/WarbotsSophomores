@@ -447,6 +447,8 @@ public class Robot {
 
                         autoCycleState = 1;
                     });
+
+                    thread.start();
                 }
         }
     }
