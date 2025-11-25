@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.pedropathing.geometry.BezierCurve;
+import com.pedropathing.paths.Path;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -62,13 +63,13 @@ public class Robot {
     private static boolean redAlliance;
     private cycles[] autoCycleList;
 
-    public Robot (HardwareMap hardwareMap, Telemetry telemetry, Gamepad gamepad1, Gamepad gamepad2, boolean redAlliance) {
+    public Robot (HardwareMap hardwareMap, Telemetry telemetry, Gamepad gamepad1, Gamepad gamepad2, boolean _redAlliance) {
         this.hardwareMap = hardwareMap;
         this.telemetry = telemetry;
         this.gamepad1 = gamepad1;
         this.gamepad2 = gamepad2;
 
-        this.redAlliance = redAlliance;
+        redAlliance = _redAlliance;
 
         frontLeftDrive = hardwareMap.get(DcMotor.class, "fl");
         backLeftDrive = hardwareMap.get(DcMotor.class, "bl");
@@ -221,6 +222,7 @@ public class Robot {
     }
 
     private int shootingTime = 4000;
+    private int triggerTime = `000;
     private int cycleNumber;
     private int teleOpState;
     private int autoCycleState;
@@ -232,6 +234,8 @@ public class Robot {
     private Pose frontRightScoringPose;
     private Pose backLeftScoringPose;
     private Pose frontLeftScoringPose;
+    private Pose rightTriggerPose;
+    private Pose leftTriggerPose;
 
     private static final double scoringDX = 14;
     private static final double cycleEndDX = 30;
@@ -248,10 +252,14 @@ public class Robot {
 
     public void buildScoringPoses () {
         double backAngle = Math.atan((140 - backScoringY) / (68 - scoringDX)) + Math.toRadians(180);
+
         backRightScoringPose = new Pose (72 + scoringDX, backScoringY, backAngle);
         frontRightScoringPose = new Pose (72 + scoringDX, 100, Math.toRadians(90));
-        backLeftScoringPose = new Pose (72 - scoringDX, 38, Math.toRadians(90));
+        backLeftScoringPose = new Pose (72 - scoringDX, 38, Math.toRadians(180) - backAngle);
         frontLeftScoringPose = new Pose (72 - scoringDX, 100, Math.toRadians(90));
+
+        rightTriggerPose = new Pose (72 + cycleEndDX, rowTrigger, Math.toRadians(90));
+        leftTriggerPose = new Pose (72 - cycleEndDX, rowTrigger, Math.toRadians(90));
     }
 
     public void buildOtherAutoPaths () {
@@ -296,29 +304,34 @@ public class Robot {
                     break;
 
                 case BR_Preload:
-                    autoCycle(BRPreloadGo, null, true, true);
+                    autoCycle(BRPreloadGo, null, true, true, false);
                     break;
 
                 case BR_I:
                     paths = buildAutoCyclePaths(backRightScoringPose, new Pose(72 + cycleEndDX + bottomCycleEndDXCorrection, rowI, 0));
-                    autoCycle(paths[0], paths[1], true, true);
+                    autoCycle(paths[0], paths[1], true, true, false);
                     break;
 
                 case BR_II:
                     paths = buildAutoCyclePaths(backRightScoringPose, new Pose(72 + cycleEndDX + bottomCycleEndDXCorrection, rowII, 0));
-                    autoCycle(paths[0], paths[1], true, true);
+                    autoCycle(paths[0], paths[1], true, true, triggerTrigger);
                     break;
 
                 case BR_III:
                     paths = buildAutoCyclePaths(backRightScoringPose, new Pose(72 + cycleEndDX, rowIII, 0));
-                    autoCycle(paths[0], paths[1], true, true);
+                    autoCycle(paths[0], paths[1], true, true, false);
                     break;
 
                 case BR_Trigger:
-                    paths = buildAutoCyclePaths(backRightScoringPose, new Pose(72 + cycleEndDX, rowTrigger, 90));
-                    autoCycle(paths[0], paths[1], false, true);
-                    break;
+                    if (triggerTrigger) {
+                        paths = buildAutoCyclePaths(backRightScoringPose, rightTriggerPose);
+                        autoCycle(paths[0], paths[1], false, true, false);
+                        break;
+                    }
 
+                    else {
+                        cycleNumber++;
+                    }
             }
         }
 
@@ -329,7 +342,7 @@ public class Robot {
         telemetry.addData("cycle", currentCycle);
     }
 
-    public void autoCycle (PathChain go, PathChain back, boolean useBalls, boolean backShootPower) {
+    public void autoCycle (PathChain go, PathChain back, boolean useBalls, boolean backShootPower, boolean triggerReset) {
         switch (autoCycleState) {
             case -1:
                 break;
@@ -343,7 +356,13 @@ public class Robot {
                     }
                 }
 
-                autoCycleState++;
+                if (triggerReset) {
+                    autoCycleState = 10;
+                }
+
+                else {
+                    autoCycleState = 1;
+                }
 
             case 1:
                 if (!follower.isBusy()) {
@@ -356,7 +375,7 @@ public class Robot {
                         follower.followPath(back);
                     }
 
-                    autoCycleState++;
+                    autoCycleState = 2;
                 }
 
             case 2:
@@ -377,6 +396,7 @@ public class Robot {
                         try {
                             Thread.sleep(shootingTime);
                         } catch (Exception e) {
+
                         }
 
                         setBackServo(false);
@@ -388,6 +408,45 @@ public class Robot {
                     });
 
                     thread.start();
+                }
+
+            case 10:
+                if (!follower.isBusy()) {
+                    Pose currentPose = follower.getPose();
+                    Pose triggerPose = (redAlliance) ? rightTriggerPose : leftTriggerPose;
+
+                    PathChain goTrigger = follower.pathBuilder()
+                            .addPath(new BezierLine(currentPose, triggerPose))
+                            .setLinearHeadingInterpolation(currentPose.getHeading(), triggerPose.getHeading())
+                            .build();
+
+                    follower.followPath(goTrigger);
+                    autoCycleState = 11;
+                }
+
+            case 11:
+                if (!follower.isBusy()) {
+                    Pose currentPose = follower.getPose();
+                    Pose triggerPose = (redAlliance) ? rightTriggerPose : leftTriggerPose;
+
+                    PathChain comeBack = follower.pathBuilder() // go prepare for the back path
+                            .addPath(new BezierLine(currentPose, triggerPose))
+                            .setLinearHeadingInterpolation(currentPose.getHeading(), triggerPose.getHeading())
+                            .build();
+
+                    Thread thread = new Thread(() -> {
+                        autoCycleState = -1;
+
+                        try {
+                            Thread.sleep(triggerTime);
+                        } catch (Exception e) {
+
+                        }
+
+                        follower.followPath(comeBack);
+
+                        autoCycleState = 1;
+                    });
                 }
         }
     }
