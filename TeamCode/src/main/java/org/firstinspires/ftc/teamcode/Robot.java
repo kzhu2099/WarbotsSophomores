@@ -222,7 +222,7 @@ public class Robot {
     }
 
     private int shootingTime = 4000;
-    private int triggerTime = `000;
+    private int triggerTime = 1000;
     private int cycleNumber;
     private int teleOpState;
     private int autoCycleState;
