@@ -212,12 +212,10 @@ public class Robot {
 
     private static final int shootingTime = 4000;
     private static final int triggerTime = 1000;
-    private int triggerCycleNumber;
-    private int cycleNumber;
-    private int teleOpState;
-    private int autoCycleState;
-
-    public boolean triggerTrigger;
+    private static int triggerCycleNumber = -1;
+    private int cycleNumber = 0;
+    private int teleOpState = 0;
+    private int autoCycleState = 0;
 
     private Pose startingPose;
     private Pose backRightScoringPose;
@@ -231,7 +229,7 @@ public class Robot {
     private static final double cycleEndDX = 30;
     private static final double bottomCycleEndDXCorrection = 0;
     private static final double backScoringY = 15;
-    private static final double frontScoringY = 100; // this has not been tested yet, TODO!
+    private static final double frontScoringY = 100; // TODO: find this y
 
     private static final double rowI = 36;
     private static final double rowII = 60;
@@ -315,15 +313,9 @@ public class Robot {
                     break;
 
                 case BR_TRIGGER:
-                    if (triggerTrigger) {
-                        paths = buildAutoCyclePaths(backRightScoringPose, rightTriggerPose);
-                        autoCycle(paths[0], paths[1], false, true);
-                        break;
-                    }
-
-                    else {
-                        cycleNumber++;
-                    }
+                    paths = buildAutoCyclePaths(backRightScoringPose, rightTriggerPose);
+                    autoCycle(paths[0], paths[1], false, true);
+                    break;
             }
         }
 
@@ -468,23 +460,13 @@ public class Robot {
     }
 
     public void autoInitLoop () {
-        if (gamepad1.leftBumperWasPressed()) {
-            triggerTrigger = false;
-        }
-
-        else if (gamepad1.rightBumperWasPressed()) {
-            triggerTrigger = true;
-        }
-
-        if (gamepad2.leftBumperWasPressed()) { // init is where the cycle list is called
+        if (gamepad1.leftBumperWasPressed()) { // init is where the cycle list is called
             triggerCycleNumber = Math.max(-1, triggerCycleNumber - 1);
         }
 
-        else if (gamepad2.rightBumperWasPressed()) {
+        else if (gamepad1.rightBumperWasPressed()) {
             triggerCycleNumber = Math.min(autoCycleList.length - 1, triggerCycleNumber + 1);
         }
-
-        telemetry.addData("triggering reset for balls", triggerTrigger);
 
         autoCycles cycle;
         if (triggerCycleNumber == -1) {
