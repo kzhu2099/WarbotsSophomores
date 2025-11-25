@@ -508,17 +508,6 @@ public class Robot {
         FollowerPose.setEndingPose(follower.getPose());
     }
 
-    public void setPowers (double[] powers) {
-        frontLeftDrive.setPower(powers[0]);
-        frontRightDrive.setPower(powers[1]);
-        backLeftDrive.setPower(powers[2]);
-        backRightDrive.setPower(powers[3]);
-    }
-
-    public void zeroPowers() {
-        setPowers(new double[] {0, 0, 0, 0});
-    }
-
     public void setIntake (boolean status) {
         intakeMotor.setPower(status ? INTAKEPOWER : 0);
     }
