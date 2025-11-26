@@ -32,15 +32,12 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.util.ElapsedTime;
 
 @TeleOp(name="Meet 2: TeleOp", group="Linear OpMode")
 // @Disabled
 public class Meet2TeleOp extends OpMode {
 
     private Robot robot;
-    private startingPoses[] allStartingPoses = startingPoses.values();
-    private static int startingSelection = 0;
 
     public void loop() {
         robot.teleOpLoop();
@@ -57,7 +54,7 @@ public class Meet2TeleOp extends OpMode {
     }
 
     public void start () {
-        FollowerPose.setStartingPose(allStartingPoses[startingSelection]); // only temporary
+        P.setStartingPose(Robot.allStartingPoses[Robot.startingSelection]); // only temporary
         robot.start();
     }
 

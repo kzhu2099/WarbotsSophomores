@@ -21,10 +21,6 @@ public class Robot {
     private final Gamepad gamepad1;
     private final Gamepad gamepad2;
 
-    /*private final DcMotor frontLeftDrive;
-    private final DcMotor backLeftDrive;
-    private final DcMotor frontRightDrive;
-    private final DcMotor backRightDrive;*/
     private final DcMotor intakeMotor;
     private final DcMotorEx outtakeLeftMotor;
     private final DcMotorEx outtakeRightMotor;
@@ -37,9 +33,9 @@ public class Robot {
     private static final double BACKOUTTAKERPM = 3600;
     private static final double EMERGENCYOUTTAKERPM = 5500;
     private static final double OUTTAKECPR = 28;
-    private static double frontOuttakeAngularRate;
-    private static double backOuttakeAngularRate;
-    private static double emergencyOuttakeAngularRate;
+    private static final double frontOuttakeAngularRate = toAngularRate(FRONTOUTTAKERPM, OUTTAKECPR);
+    private static final double backOuttakeAngularRate = toAngularRate(BACKOUTTAKERPM, OUTTAKECPR);
+    private static final double emergencyOuttakeAngularRate = toAngularRate(EMERGENCYOUTTAKERPM, OUTTAKECPR);
     private static final double UPTOSPEEDTHRESHOLD = 0.98; // measuring velocity is not always accurate so this will be triggered
 
     public static final double WIDTH = 17.5;
@@ -53,6 +49,15 @@ public class Robot {
     private static boolean redAlliance;
     private autoCycles[] autoCycleList;
 
+    private static final int shootingTime = 4000;
+    private static final int triggerTime = 1000;
+    private static final int intakeWaitTime = 1000;
+    private static int triggerCycleNumber = -1;
+
+    private int cycleNumber = 0;
+    private int teleOpState = 0;
+    private int autoCycleState = 0;
+
     public Robot (HardwareMap hardwareMap, Telemetry telemetry, Gamepad gamepad1, Gamepad gamepad2, boolean _redAlliance) {
         this.hardwareMap = hardwareMap;
         this.telemetry = telemetry;
@@ -60,12 +65,6 @@ public class Robot {
         this.gamepad2 = gamepad2;
 
         redAlliance = _redAlliance;
-
-        /*frontLeftDrive = hardwareMap.get(DcMotor.class, "fl");
-        backLeftDrive = hardwareMap.get(DcMotor.class, "bl");
-        frontRightDrive = hardwareMap.get(DcMotor.class, "fr");
-        backRightDrive = hardwareMap.get(DcMotor.class, "br");*/
-
         intakeMotor = hardwareMap.get(DcMotor.class, "in");
         outtakeLeftMotor = (DcMotorEx) hardwareMap.get(DcMotor.class, "lo");
         outtakeRightMotor = (DcMotorEx) hardwareMap.get(DcMotor.class, "ro");
@@ -73,11 +72,6 @@ public class Robot {
         // frontServo = hardwareMap.get(CRServo.class, "Front Servo");
         backServo = hardwareMap.get(CRServo.class, "bs");
         // odometry = hardwareMap.get(GoBildaPinpointDriver.class, "odom");
-
-        /*frontLeftDrive.setDirection(DcMotor.Direction.REVERSE);
-        backLeftDrive.setDirection(DcMotor.Direction.REVERSE);
-        frontRightDrive.setDirection(DcMotor.Direction.FORWARD);
-        backRightDrive.setDirection(DcMotor.Direction.FORWARD);*/
 
         intakeMotor.setDirection(DcMotor.Direction.REVERSE);
         outtakeLeftMotor.setDirection(DcMotor.Direction.REVERSE);
@@ -88,16 +82,16 @@ public class Robot {
         outtakeLeftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         outtakeRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        frontOuttakeAngularRate = (FRONTOUTTAKERPM / 60) * OUTTAKECPR;
-        backOuttakeAngularRate = (BACKOUTTAKERPM / 60) * OUTTAKECPR;
-        emergencyOuttakeAngularRate = (EMERGENCYOUTTAKERPM / 60) * OUTTAKECPR;
-
         telemetry.addData("Status", "Initialized");
         telemetry.update();
     }
 
     public void setAutoCycleList(autoCycles[] autoCycleList) {
         this.autoCycleList = autoCycleList;
+    }
+
+    public static double toAngularRate (double RPM, double CPR) {
+        return (RPM / 60) * CPR;
     }
 
     public void teleOpLoop () {
@@ -226,85 +220,11 @@ public class Robot {
         Pose currentPose = follower.getPose();
 
         PathChain parkPath = follower.pathBuilder()
-                .addPath(new BezierLine(currentPose, parkingPose))
-                .setLinearHeadingInterpolation(currentPose.getHeading(), parkingPose.getHeading())
+                .addPath(new BezierLine(currentPose, P.parkingPose))
+                .setLinearHeadingInterpolation(currentPose.getHeading(), P.parkingPose.getHeading())
                 .build();
 
         follower.followPath(parkPath);
-    }
-
-    private static final int shootingTime = 4000;
-    private static final int triggerTime = 1000;
-    private static final int intakeWaitTime = 1000;
-    private static int triggerCycleNumber = -1;
-    private int cycleNumber = 0;
-    private int teleOpState = 0;
-    private int autoCycleState = 0;
-
-    private Pose startingPose;
-    private Pose BR_ScoringPose;
-    private Pose FR_ScoringPose;
-    private Pose BL_ScoringPose;
-    private Pose FL_ScoringPose;
-
-    private Pose BR_EndingPose;
-    private Pose FR_EndingPose;
-    private Pose BL_EndingPose;
-    private Pose FL_EndingPose;
-
-    private Pose R_TriggerPose;
-    private Pose L_TriggerPose;
-    private Pose R_ParkingPose;
-    private Pose L_ParkingPose;
-
-    private Pose triggerPose;
-    private Pose parkingPose;
-
-    private static final double scoringDX = 14;
-    private static final double cycleEndDX = 46;
-    private static final double bottomCycleEndDXCorrection = 0;
-    private static final double backScoringY = 15;
-    private static final double frontScoringY = 100; // TODO: find this y
-
-    private static final double rowI = 36;
-    private static final double rowII = 60;
-    private static final double rowIII = 84;
-    private static final double rowTrigger = 72;
-
-    public void buildMainPoses () {
-        double backAngle = Math.atan((140 - backScoringY) / (68 - scoringDX)) + Math.toRadians(180);
-
-        BR_ScoringPose = new Pose (72 + scoringDX, backScoringY, backAngle);
-        FR_ScoringPose = new Pose (72 + scoringDX, 100, Math.toRadians(90));
-        BL_ScoringPose = new Pose (72 - scoringDX, 38, Math.toRadians(180) - backAngle);
-        FR_ScoringPose = new Pose (72 - scoringDX, 100, Math.toRadians(90));
-
-        BR_EndingPose = new Pose (72 + 33, 33, Math.toRadians(90));
-        FR_EndingPose = new Pose (72 + 33, 33, Math.toRadians(90));
-        BL_EndingPose = new Pose (72 + 33, 33, Math.toRadians(90));
-        FL_EndingPose = new Pose (72 + 33, 33, Math.toRadians(90));
-
-        R_TriggerPose = new Pose (72 + cycleEndDX, rowTrigger, Math.toRadians(90));
-        L_TriggerPose = new Pose (72 - cycleEndDX, rowTrigger, Math.toRadians(90));
-        R_ParkingPose = new Pose (72 + 33, 33, Math.toRadians(90));
-        L_ParkingPose = new Pose (72 - 33, 33, Math.toRadians(90));
-    }
-
-    private PathChain BR_Preload;
-    private PathChain BR_End;
-
-    public void buildOtherAutoPaths () {
-        BR_Preload = follower.pathBuilder()
-                .addPath(new BezierLine(startingPose, BR_ScoringPose))
-                .setLinearHeadingInterpolation(startingPose.getHeading(), BR_ScoringPose.getHeading())
-                .build();
-
-        BR_End = follower.pathBuilder()
-                .addPath(new BezierLine(startingPose, BR_EndingPose))
-                .setLinearHeadingInterpolation(startingPose.getHeading(), BR_EndingPose.getHeading())
-                .build();
-
-        // TODO: LITERALLY FIX EVERYTHING MAKE SURE IT WORKS THEN REPEAT FOR NEXT 3 THEN NEW BOT GNG
     }
 
     public PathChain[] buildAutoCyclePaths (Pose start, Pose end) {
@@ -342,32 +262,57 @@ public class Robot {
                     break;
 
                 case BR_PRELOAD:
-                    autoCycle(BR_Preload, null, true, true);
+                    autoCycle(P.BR_Preload, null, true, true);
                     break;
 
                 case BR_I:
-                    paths = buildAutoCyclePaths(BR_ScoringPose, new Pose(72 + cycleEndDX + bottomCycleEndDXCorrection, rowI, 0));
+                    paths = buildAutoCyclePaths(P.BR_ScoringPose, new Pose(72 + P.cycleEndDX + P.bottomCycleEndDXCorrection, P.rowI, 0));
                     autoCycle(paths[0], paths[1], true, true);
                     break;
 
                 case BR_II:
-                    paths = buildAutoCyclePaths(BR_ScoringPose, new Pose(72 + cycleEndDX + bottomCycleEndDXCorrection, rowII, 0));
+                    paths = buildAutoCyclePaths(P.BR_ScoringPose, new Pose(72 + P.cycleEndDX + P.bottomCycleEndDXCorrection, P.rowII, 0));
                     autoCycle(paths[0], paths[1], true, true);
                     break;
 
                 case BR_III:
-                    paths = buildAutoCyclePaths(BR_ScoringPose, new Pose(72 + cycleEndDX, rowIII, 0));
+                    paths = buildAutoCyclePaths(P.BR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowIII, 0));
                     autoCycle(paths[0], paths[1], true, true);
                     break;
 
                 case BR_TRIGGER:
-                    paths = buildAutoCyclePaths(BR_ScoringPose, R_TriggerPose);
+                    paths = buildAutoCyclePaths(P.BR_ScoringPose, P.R_TriggerPose);
                     autoCycle(paths[0], paths[1], false, true);
                     break;
 
                 case BR_END:
-                    autoCycle(BR_End, null, false, true);
+                    autoCycle(P.BR_End, null, false, true);
                     break;
+
+                case DELAY_1:
+                    if (autoCycleState == -1) {
+                        assert true;
+                    }
+
+                    else if (autoCycleState == 0) {
+                        autoCycleState = -1;
+                        Thread thread = new Thread(() -> {
+                            try {
+                                Thread.sleep(1000);
+                            } catch (Exception e) {
+                                ERRORCOUNT++;
+                            }
+
+                            autoCycleState = 1;
+                        });
+
+                        thread.start();
+                    }
+
+                    else if (autoCycleState == 1) {
+                        autoCycleState = 0;
+                        cycleNumber++;
+                    }
 
                 default:
                     telemetry.addData("no auto loop state", true);
@@ -469,7 +414,7 @@ public class Robot {
             case 10:
                 if (!follower.isBusy()) {
                     Pose currentPose = follower.getPose();
-                    Pose triggerPose = (redAlliance) ? R_TriggerPose : L_TriggerPose;
+                    Pose triggerPose = P.triggerPose;
 
                     PathChain goTrigger = follower.pathBuilder()
                             .addPath(new BezierLine(currentPose, triggerPose))
@@ -487,8 +432,8 @@ public class Robot {
                     Pose currentPose = follower.getPose();
 
                     PathChain comeBack = follower.pathBuilder() // go prepare for the back path
-                            .addPath(new BezierLine(currentPose, triggerPose))
-                            .setLinearHeadingInterpolation(currentPose.getHeading(), triggerPose.getHeading())
+                            .addPath(new BezierLine(currentPose, P.triggerPose))
+                            .setLinearHeadingInterpolation(currentPose.getHeading(), P.triggerPose.getHeading())
                             .build();
 
                     autoCycleState = -1;
@@ -527,8 +472,8 @@ public class Robot {
         follower = Constants.createFollower(hardwareMap);
     }
 
-    private static final startingPoses[] allStartingPoses = startingPoses.values();
-    private static int startingSelection = 0;
+    public static final startingPoses[] allStartingPoses = startingPoses.values();
+    public static int startingSelection = 0;
 
     public void teleOpInitLoop () {
         if (gamepad1.dpadRightWasPressed()) {
@@ -540,8 +485,6 @@ public class Robot {
         }
 
         telemetry.addData("starting pose", allStartingPoses[startingSelection]);
-        allTelemetry();
-
         telemetry.update();
     }
 
@@ -570,21 +513,20 @@ public class Robot {
         cycleNumber = 0;
         teleOpState = 0;
 
-        startingPose = FollowerPose.pose;
-        follower.setStartingPose(startingPose);
+        follower.setStartingPose(P.startingPose);
 
         if (redAlliance) {
-            triggerPose = R_TriggerPose;
-            parkingPose = L_ParkingPose;
+            P.triggerPose = P.R_TriggerPose;
+            P.parkingPose = P.L_ParkingPose;
         }
 
         else {
-            triggerPose = L_TriggerPose;
-            parkingPose = R_ParkingPose;
+            P.triggerPose = P.L_TriggerPose;
+            P.parkingPose = P.R_ParkingPose;
         }
 
-        buildMainPoses();
-        buildOtherAutoPaths();
+        P.buildMainPoses();
+        P.buildOtherAutoPaths(follower);
 
         follower.startTeleopDrive(true);
     }
@@ -593,7 +535,7 @@ public class Robot {
         follower.setXVelocity(0);
         follower.setYVelocity(0);
 
-        FollowerPose.setEndingPose(follower.getPose());
+        P.setStoppedPose(follower.getPose());
     }
 
     public void setIntake (boolean status) {

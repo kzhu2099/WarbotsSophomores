@@ -49,8 +49,8 @@ public class Meet2BackRightAuto extends OpMode {
         robot.setAutoCycleList(
             new autoCycles[] {
                 autoCycles.BR_PRELOAD, // 0
+                autoCycles.BR_II, // so i can push the trigger after i pick up these balls
                 autoCycles.BR_I,
-                autoCycles.BR_II,
                 autoCycles.BR_III,
                 autoCycles.BR_END,
             }
@@ -62,7 +62,7 @@ public class Meet2BackRightAuto extends OpMode {
     }
 
     public void start () {
-        FollowerPose.setStartingPose(startingPoses.BR);
+        P.setStartingPose(startingPoses.BR);
         robot.start();
     }
 }

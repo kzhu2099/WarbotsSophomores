@@ -34,27 +34,27 @@ public class Constants {
                     0.8,
                     0,
                     0,
-                    0.01
+                    0
             ))
             .secondaryHeadingPIDFCoefficients(new PIDFCoefficients(
                     2.5,
                     0,
                     0.1,
-                    0.0005
+                    0
             ))
             .drivePIDFCoefficients(new FilteredPIDFCoefficients(
                     0.1,
                     0,
                     0.00035,
                     0.6,
-                    0.015
+                    0
             ))
             .secondaryDrivePIDFCoefficients(new FilteredPIDFCoefficients(
                     0.02,
                     0,
                     0.000005,
                     0.6,
-                    0.01
+                    0
             ))
             .drivePIDFSwitch(15)
             .centripetalScaling(0.0005);
