@@ -32,7 +32,7 @@ public class Robot {
 
     private static final double SENSITIVITY = 0.05;
     private static final double SERVOPOWER = 1;
-    private static final double INTAKEPOWER = 0.7;
+    private static final double INTAKEPOWER = 0.5;
     private static final double FRONTOUTTAKERPM = 3400;
     private static final double BACKOUTTAKERPM = 3600;
     private static final double EMERGENCYOUTTAKERPM = 5500;
@@ -40,7 +40,7 @@ public class Robot {
     private static double frontOuttakeAngularRate;
     private static double backOuttakeAngularRate;
     private static double emergencyOuttakeAngularRate;
-    private static final double UPTOSPEEDTHRESHOLD = 1; // measuring velocity is not always accurate so this will be triggered
+    private static final double UPTOSPEEDTHRESHOLD = 0.98; // measuring velocity is not always accurate so this will be triggered
 
     public static final double WIDTH = 17.5;
     public static final double LENGTH = 17;
@@ -100,18 +100,16 @@ public class Robot {
         this.autoCycleList = autoCycleList;
     }
 
-    private PathChain autoAimPath;
-
     public void teleOpLoop () {
         follower.update();
-        if (gamepad1.bWasPressed() && !follower.isBusy()) {
+        if (teleOpState == 0 && gamepad1.bWasPressed() && !follower.isBusy()) {
             teleOpState = 1;
-            buildAutoAimPath();
-            follower.followPath(autoAimPath);
+            autoAim();
         }
 
-        if (autoAimPath != null) {
-            telemetry.addData("autoaim", Math.toDegrees(autoAimPath.getPath(1).getPose(1).getHeading()));
+        else if (teleOpState == 0 && gamepad1.aWasPressed() && !follower.isBusy()) {
+            teleOpState = 2;
+            parkRobot();
         }
 
         if (teleOpState == 0) {
@@ -159,6 +157,13 @@ public class Robot {
             }
         }
 
+        else if (teleOpState == 2) {
+            if (!follower.isBusy()) {
+                teleOpState = 0;
+                follower.startTeleopDrive(true);
+            }
+        }
+
         boolean intakeOn = gamepad2.left_trigger > SENSITIVITY;
         boolean outtakeOn = gamepad2.right_trigger > SENSITIVITY;
         boolean backShoot = gamepad2.right_bumper;
@@ -187,7 +192,7 @@ public class Robot {
         allTelemetry();
     }
 
-    public void buildAutoAimPath () {
+    public void autoAim () {
         Pose currentPose = follower.getPose();
         double x = currentPose.getX();
         double y = currentPose.getY();
@@ -196,6 +201,7 @@ public class Robot {
         Pose intermediatePose;
 
         int k = 10;
+        PathChain autoAimPath;
         if (redAlliance) {
             heading = Math.atan((140 - (y)) / (140 - (x - HW))) + Math.PI; // middle of robot, turn to outtake
             intermediatePose = new Pose(x + k, y + k, heading / 2);
@@ -208,10 +214,28 @@ public class Robot {
                     .setLinearHeadingInterpolation(intermediatePose.getHeading(), heading)
                     .build();
         }
+
+        else {
+            autoAimPath = null;
+        }
+
+        follower.followPath(autoAimPath);
+    }
+
+    public void parkRobot () {
+        Pose currentPose = follower.getPose();
+
+        PathChain parkPath = follower.pathBuilder()
+                .addPath(new BezierLine(currentPose, parkingPose))
+                .setLinearHeadingInterpolation(currentPose.getHeading(), parkingPose.getHeading())
+                .build();
+
+        follower.followPath(parkPath);
     }
 
     private static final int shootingTime = 4000;
     private static final int triggerTime = 1000;
+    private static final int intakeWaitTime = 1000;
     private static int triggerCycleNumber = -1;
     private int cycleNumber = 0;
     private int teleOpState = 0;
@@ -224,9 +248,13 @@ public class Robot {
     private Pose frontLeftScoringPose;
     private Pose rightTriggerPose;
     private Pose leftTriggerPose;
+    private Pose rightParkingPose;
+    private Pose leftParkingPose;
+    private Pose triggerPose;
+    private Pose parkingPose;
 
     private static final double scoringDX = 14;
-    private static final double cycleEndDX = 30;
+    private static final double cycleEndDX = 46;
     private static final double bottomCycleEndDXCorrection = 0;
     private static final double backScoringY = 15;
     private static final double frontScoringY = 100; // TODO: find this y
@@ -238,7 +266,7 @@ public class Robot {
 
     private PathChain BRPreloadGo;
 
-    public void buildScoringPoses () {
+    public void buildMainPoses () {
         double backAngle = Math.atan((140 - backScoringY) / (68 - scoringDX)) + Math.toRadians(180);
 
         backRightScoringPose = new Pose (72 + scoringDX, backScoringY, backAngle);
@@ -248,6 +276,8 @@ public class Robot {
 
         rightTriggerPose = new Pose (72 + cycleEndDX, rowTrigger, Math.toRadians(90));
         leftTriggerPose = new Pose (72 - cycleEndDX, rowTrigger, Math.toRadians(90));
+        rightParkingPose = new Pose (72 + 33, 33, Math.toRadians(90));
+        leftParkingPose = new Pose (72 - 33, 33, Math.toRadians(90));
     }
 
     public void buildOtherAutoPaths () {
@@ -316,6 +346,10 @@ public class Robot {
                     paths = buildAutoCyclePaths(backRightScoringPose, rightTriggerPose);
                     autoCycle(paths[0], paths[1], false, true);
                     break;
+
+                default:
+                    telemetry.addData("no auto loop state", true);
+                    break;
             }
         }
 
@@ -324,6 +358,7 @@ public class Robot {
         telemetry.addData("auto number", cycleNumber);
         telemetry.addData("cycle state", autoCycleState);
         telemetry.addData("cycle", currentCycle);
+        telemetry.addData("test", triggerCycleNumber == cycleNumber);
     }
 
     public void autoCycle (PathChain go, PathChain back, boolean useBalls, boolean backShootPower) {
@@ -340,7 +375,7 @@ public class Robot {
                     }
                 }
 
-                if (triggerCycleNumber != -1 && triggerCycleNumber == cycleNumber) {
+                if (triggerCycleNumber == cycleNumber) {
                     autoCycleState = 10;
                 }
 
@@ -348,24 +383,38 @@ public class Robot {
                     autoCycleState = 1;
                 }
 
+                break;
+
             case 1:
                 if (!follower.isBusy()) {
-                    if (useBalls) {
-                        setIntake(false);
-                        setOuttake(true, backShootPower);
-                    }
+                    Thread thread = new Thread(() -> {
+                        autoCycleState = -1;
 
-                    if (back != null) {
-                        follower.followPath(back);
-                    }
+                        if (useBalls) {
+                            setOuttake(true, backShootPower);
+                            try {
+                                Thread.sleep(intakeWaitTime) ;
+                                setIntake(false);
+                            } catch (Exception e) {
+                                ERRORCOUNT++;
+                            }
+                        }
 
-                    autoCycleState = 2;
+                        if (back != null) {
+                            follower.followPath(back);
+                        }
+
+                        autoCycleState = 2;
+                    });
+
+                    thread.start();
                 }
+
+                break;
 
             case 2:
                 if (!useBalls) {
-                    autoCycleState = 0;
-                    cycleNumber++;
+                    autoCycleState = 1000;
                 }
 
                 else if (checkUpToSpeed(outtakeLeftMotor, (backShootPower) ? backOuttakeAngularRate : frontOuttakeAngularRate)
@@ -387,12 +436,13 @@ public class Robot {
                         setIntake(false);
                         setOuttake(false, backShootPower);
 
-                        autoCycleState = 0;
-                        cycleNumber++;
+                        autoCycleState = 1000; // so it isn't in a different thread, it happens on the main line --> only once
                     });
 
                     thread.start();
                 }
+
+                break;
 
             case 10:
                 if (!follower.isBusy()) {
@@ -408,19 +458,20 @@ public class Robot {
                     autoCycleState = 11;
                 }
 
+                break;
+
             case 11:
                 if (!follower.isBusy()) {
                     Pose currentPose = follower.getPose();
-                    Pose triggerPose = (redAlliance) ? rightTriggerPose : leftTriggerPose;
 
                     PathChain comeBack = follower.pathBuilder() // go prepare for the back path
                             .addPath(new BezierLine(currentPose, triggerPose))
                             .setLinearHeadingInterpolation(currentPose.getHeading(), triggerPose.getHeading())
                             .build();
 
-                    Thread thread = new Thread(() -> {
-                        autoCycleState = -1;
+                    autoCycleState = -1;
 
+                    Thread thread = new Thread(() -> {
                         try {
                             Thread.sleep(triggerTime);
                         } catch (Exception e) {
@@ -434,6 +485,19 @@ public class Robot {
 
                     thread.start();
                 }
+
+                break;
+
+            case 1000:
+                cycleNumber++;
+                autoCycleState = 0;
+
+                break;
+
+            default:
+                telemetry.addData("auto cycle no state", true);
+
+                break;
         }
     }
 
@@ -475,9 +539,8 @@ public class Robot {
         else {
             cycle = autoCycleList[triggerCycleNumber];
         }
-        telemetry.addData("the cycle during which the trigger will be triggered", cycle);
-        allTelemetry();
 
+        telemetry.addData("the cycle during which the trigger will be triggered", cycle);
         telemetry.update();
     }
 
@@ -488,7 +551,17 @@ public class Robot {
         startingPose = FollowerPose.pose;
         follower.setStartingPose(startingPose);
 
-        buildScoringPoses();
+        if (redAlliance) {
+            triggerPose = rightTriggerPose;
+            parkingPose = leftParkingPose;
+        }
+
+        else {
+            triggerPose = leftTriggerPose;
+            parkingPose = rightParkingPose;
+        }
+
+        buildMainPoses();
         buildOtherAutoPaths();
 
         follower.startTeleopDrive(true);
