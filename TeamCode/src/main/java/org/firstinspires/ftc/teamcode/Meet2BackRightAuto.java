@@ -51,7 +51,8 @@ public class Meet2BackRightAuto extends OpMode {
                 autoCycles.BR_PRELOAD, // 0
                 autoCycles.BR_I,
                 autoCycles.BR_II,
-                autoCycles.BR_III
+                autoCycles.BR_III,
+                autoCycles.BR_END,
             }
         );
     }

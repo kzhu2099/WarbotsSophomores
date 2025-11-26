@@ -7,4 +7,5 @@ public enum autoCycles {
     BR_II,
     BR_III,
     BR_TRIGGER,
+    BR_END,
 }

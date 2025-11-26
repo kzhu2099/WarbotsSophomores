@@ -242,14 +242,21 @@ public class Robot {
     private int autoCycleState = 0;
 
     private Pose startingPose;
-    private Pose backRightScoringPose;
-    private Pose frontRightScoringPose;
-    private Pose backLeftScoringPose;
-    private Pose frontLeftScoringPose;
-    private Pose rightTriggerPose;
-    private Pose leftTriggerPose;
-    private Pose rightParkingPose;
-    private Pose leftParkingPose;
+    private Pose BR_ScoringPose;
+    private Pose FR_ScoringPose;
+    private Pose BL_ScoringPose;
+    private Pose FL_ScoringPose;
+
+    private Pose BR_EndingPose;
+    private Pose FR_EndingPose;
+    private Pose BL_EndingPose;
+    private Pose FL_EndingPose;
+
+    private Pose R_TriggerPose;
+    private Pose L_TriggerPose;
+    private Pose R_ParkingPose;
+    private Pose L_ParkingPose;
+
     private Pose triggerPose;
     private Pose parkingPose;
 
@@ -264,26 +271,37 @@ public class Robot {
     private static final double rowIII = 84;
     private static final double rowTrigger = 72;
 
-    private PathChain BRPreloadGo;
-
     public void buildMainPoses () {
         double backAngle = Math.atan((140 - backScoringY) / (68 - scoringDX)) + Math.toRadians(180);
 
-        backRightScoringPose = new Pose (72 + scoringDX, backScoringY, backAngle);
-        frontRightScoringPose = new Pose (72 + scoringDX, 100, Math.toRadians(90));
-        backLeftScoringPose = new Pose (72 - scoringDX, 38, Math.toRadians(180) - backAngle);
-        frontLeftScoringPose = new Pose (72 - scoringDX, 100, Math.toRadians(90));
+        BR_ScoringPose = new Pose (72 + scoringDX, backScoringY, backAngle);
+        FR_ScoringPose = new Pose (72 + scoringDX, 100, Math.toRadians(90));
+        BL_ScoringPose = new Pose (72 - scoringDX, 38, Math.toRadians(180) - backAngle);
+        FR_ScoringPose = new Pose (72 - scoringDX, 100, Math.toRadians(90));
 
-        rightTriggerPose = new Pose (72 + cycleEndDX, rowTrigger, Math.toRadians(90));
-        leftTriggerPose = new Pose (72 - cycleEndDX, rowTrigger, Math.toRadians(90));
-        rightParkingPose = new Pose (72 + 33, 33, Math.toRadians(90));
-        leftParkingPose = new Pose (72 - 33, 33, Math.toRadians(90));
+        BR_EndingPose = new Pose (72 + 33, 33, Math.toRadians(90));
+        FR_EndingPose = new Pose (72 + 33, 33, Math.toRadians(90));
+        BL_EndingPose = new Pose (72 + 33, 33, Math.toRadians(90));
+        FL_EndingPose = new Pose (72 + 33, 33, Math.toRadians(90));
+
+        R_TriggerPose = new Pose (72 + cycleEndDX, rowTrigger, Math.toRadians(90));
+        L_TriggerPose = new Pose (72 - cycleEndDX, rowTrigger, Math.toRadians(90));
+        R_ParkingPose = new Pose (72 + 33, 33, Math.toRadians(90));
+        L_ParkingPose = new Pose (72 - 33, 33, Math.toRadians(90));
     }
 
+    private PathChain BR_Preload;
+    private PathChain BR_End;
+
     public void buildOtherAutoPaths () {
-        BRPreloadGo = follower.pathBuilder()
-                .addPath(new BezierLine(startingPose, backRightScoringPose))
-                .setLinearHeadingInterpolation(startingPose.getHeading(), backRightScoringPose.getHeading())
+        BR_Preload = follower.pathBuilder()
+                .addPath(new BezierLine(startingPose, BR_ScoringPose))
+                .setLinearHeadingInterpolation(startingPose.getHeading(), BR_ScoringPose.getHeading())
+                .build();
+
+        BR_End = follower.pathBuilder()
+                .addPath(new BezierLine(startingPose, BR_EndingPose))
+                .setLinearHeadingInterpolation(startingPose.getHeading(), BR_EndingPose.getHeading())
                 .build();
 
         // TODO: LITERALLY FIX EVERYTHING MAKE SURE IT WORKS THEN REPEAT FOR NEXT 3 THEN NEW BOT GNG
@@ -324,27 +342,31 @@ public class Robot {
                     break;
 
                 case BR_PRELOAD:
-                    autoCycle(BRPreloadGo, null, true, true);
+                    autoCycle(BR_Preload, null, true, true);
                     break;
 
                 case BR_I:
-                    paths = buildAutoCyclePaths(backRightScoringPose, new Pose(72 + cycleEndDX + bottomCycleEndDXCorrection, rowI, 0));
+                    paths = buildAutoCyclePaths(BR_ScoringPose, new Pose(72 + cycleEndDX + bottomCycleEndDXCorrection, rowI, 0));
                     autoCycle(paths[0], paths[1], true, true);
                     break;
 
                 case BR_II:
-                    paths = buildAutoCyclePaths(backRightScoringPose, new Pose(72 + cycleEndDX + bottomCycleEndDXCorrection, rowII, 0));
+                    paths = buildAutoCyclePaths(BR_ScoringPose, new Pose(72 + cycleEndDX + bottomCycleEndDXCorrection, rowII, 0));
                     autoCycle(paths[0], paths[1], true, true);
                     break;
 
                 case BR_III:
-                    paths = buildAutoCyclePaths(backRightScoringPose, new Pose(72 + cycleEndDX, rowIII, 0));
+                    paths = buildAutoCyclePaths(BR_ScoringPose, new Pose(72 + cycleEndDX, rowIII, 0));
                     autoCycle(paths[0], paths[1], true, true);
                     break;
 
                 case BR_TRIGGER:
-                    paths = buildAutoCyclePaths(backRightScoringPose, rightTriggerPose);
+                    paths = buildAutoCyclePaths(BR_ScoringPose, R_TriggerPose);
                     autoCycle(paths[0], paths[1], false, true);
+                    break;
+
+                case BR_END:
+                    autoCycle(BR_End, null, false, true);
                     break;
 
                 default:
@@ -447,7 +469,7 @@ public class Robot {
             case 10:
                 if (!follower.isBusy()) {
                     Pose currentPose = follower.getPose();
-                    Pose triggerPose = (redAlliance) ? rightTriggerPose : leftTriggerPose;
+                    Pose triggerPose = (redAlliance) ? R_TriggerPose : L_TriggerPose;
 
                     PathChain goTrigger = follower.pathBuilder()
                             .addPath(new BezierLine(currentPose, triggerPose))
@@ -552,13 +574,13 @@ public class Robot {
         follower.setStartingPose(startingPose);
 
         if (redAlliance) {
-            triggerPose = rightTriggerPose;
-            parkingPose = leftParkingPose;
+            triggerPose = R_TriggerPose;
+            parkingPose = L_ParkingPose;
         }
 
         else {
-            triggerPose = leftTriggerPose;
-            parkingPose = rightParkingPose;
+            triggerPose = L_TriggerPose;
+            parkingPose = R_ParkingPose;
         }
 
         buildMainPoses();
