@@ -32,32 +32,32 @@ public class Constants {
             ))
             .headingPIDFCoefficients(new PIDFCoefficients(
                     0.8,
-                    0,
-                    0,
+                    0.001,
+                    0.001,
                     0
             ))
             .secondaryHeadingPIDFCoefficients(new PIDFCoefficients(
                     2.5,
-                    0,
+                    0.00001,
                     0.1,
                     0
             ))
             .drivePIDFCoefficients(new FilteredPIDFCoefficients(
-                    0.1,
-                    0,
-                    0.00035,
+                    0.5,
+                    0.01,
+                    0.01,
                     0.6,
                     0
             ))
             .secondaryDrivePIDFCoefficients(new FilteredPIDFCoefficients(
-                    0.02,
+                    0.01,
                     0,
-                    0.000005,
+                    0.00005,
                     0.6,
                     0
             ))
             .drivePIDFSwitch(15)
-            .centripetalScaling(0.0005);
+            .centripetalScaling(0.00055);
 
     public static MecanumConstants driveConstants = new MecanumConstants()
             .maxPower(1)
@@ -93,9 +93,9 @@ public class Constants {
             0.1,
             0.009,
             50,
-            1.25,
+            1.05,
             10,
-            1
+            0.7
     );
 
     //Add custom localizers or drivetrains here

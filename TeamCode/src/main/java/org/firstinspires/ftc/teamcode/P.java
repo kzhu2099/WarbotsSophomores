@@ -23,12 +23,9 @@ public class P {
     public static Pose R_ParkingPose;
     public static Pose L_ParkingPose;
 
-    public static Pose triggerPose;
-    public static Pose parkingPose;
-
     public static final double scoringDX = 14;
-    public static final double cycleEndDX = 46;
-    public static final double bottomCycleEndDXCorrection = 0;
+    public static final double cycleEndDX = 50;
+    public static final double triggerPoseDX = 55;
     public static final double backScoringY = 15;
     public static final double frontScoringY = 100; // TODO: find this y
 
@@ -68,8 +65,8 @@ public class P {
         BL_EndingPose = new Pose (72 + 33, 33, Math.toRadians(90));
         FL_EndingPose = new Pose (72 + 33, 33, Math.toRadians(90));
 
-        R_TriggerPose = new Pose (72 + cycleEndDX, rowTrigger, Math.toRadians(90));
-        L_TriggerPose = new Pose (72 - cycleEndDX, rowTrigger, Math.toRadians(90));
+        R_TriggerPose = new Pose (72 + triggerPoseDX, rowTrigger, Math.toRadians(0));
+        L_TriggerPose = new Pose (72 - triggerPoseDX, rowTrigger, Math.toRadians(180));
         R_ParkingPose = new Pose (72 + 33, 33, Math.toRadians(90));
         L_ParkingPose = new Pose (72 - 33, 33, Math.toRadians(90));
     }

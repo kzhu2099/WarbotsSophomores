@@ -13,6 +13,7 @@ import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
+import com.qualcomm.robotcore.hardware.Servo;
 
 public class Robot {
 
@@ -25,6 +26,9 @@ public class Robot {
     private final DcMotorEx outtakeLeftMotor;
     private final DcMotorEx outtakeRightMotor;
     private final CRServo backServo;
+    private final Servo gateServo;
+
+    private static final double gateMotionRange = 180;
 
     private static final double SENSITIVITY = 0.05;
     private static final double SERVOPOWER = 1;
@@ -50,8 +54,8 @@ public class Robot {
     private autoCycles[] autoCycleList;
 
     private static final int shootingTime = 4000;
-    private static final int triggerTime = 1000;
-    private static final int intakeWaitTime = 1000;
+    private static final int triggerTime = 500;
+    private static final int intakeWaitTime = 500;
     private static int triggerCycleNumber = -1;
 
     private int cycleNumber = 0;
@@ -71,6 +75,7 @@ public class Robot {
 
         // frontServo = hardwareMap.get(CRServo.class, "Front Servo");
         backServo = hardwareMap.get(CRServo.class, "bs");
+        gateServo = null; //hardwareMap.get(Servo.class, "gs");
         // odometry = hardwareMap.get(GoBildaPinpointDriver.class, "odom");
 
         intakeMotor.setDirection(DcMotor.Direction.REVERSE);
@@ -78,6 +83,7 @@ public class Robot {
         outtakeRightMotor.setDirection(DcMotor.Direction.FORWARD);
 
         backServo.setDirection(CRServo.Direction.REVERSE);
+        // gateServo.setDirection(Servo.Direction.REVERSE);
 
         outtakeLeftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         outtakeRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -174,12 +180,12 @@ public class Robot {
         boolean outtakeUpToSpeed = checkUpToSpeed(outtakeLeftMotor, angularRate) && checkUpToSpeed(outtakeRightMotor, angularRate);
 
         boolean backServoOn = gamepad2.y && outtakeUpToSpeed;
-        double backServoPower = (backServoOn) ? SERVOPOWER : 0;
-        backServo.setPower(backServoPower);
+        setBackServo(backServoOn);
+        // setGateServo(backServoOn);
 
         telemetry.addData("intake status", "%b, %4.2f", intakeOn, INTAKEPOWER);
         telemetry.addData("outtake status", "%b, %4.2f", outtakeOn, angularRate);
-        telemetry.addData("back servo status", "%b, %4.2f", backServoOn, backServoPower);
+        telemetry.addData("back servo status", "%b", backServoOn);
         telemetry.addData("driving status", teleOpState);
         telemetry.addData("follower is busy", follower.isBusy());
 
@@ -218,10 +224,10 @@ public class Robot {
 
     public void parkRobot () {
         Pose currentPose = follower.getPose();
-
+        Pose parkingPose = (redAlliance) ? P.L_ParkingPose : P.R_ParkingPose;
         PathChain parkPath = follower.pathBuilder()
-                .addPath(new BezierLine(currentPose, P.parkingPose))
-                .setLinearHeadingInterpolation(currentPose.getHeading(), P.parkingPose.getHeading())
+                .addPath(new BezierLine(currentPose, parkingPose))
+                .setLinearHeadingInterpolation(currentPose.getHeading(), parkingPose.getHeading())
                 .build();
 
         follower.followPath(parkPath);
@@ -230,8 +236,9 @@ public class Robot {
     public PathChain[] buildAutoCyclePaths (Pose start, Pose end) {
         Pose control = new Pose(start.getX(), end.getY());
         PathChain path1 = follower.pathBuilder()
-                .addPath(new BezierCurve(start, control, end))
+                .addPath(new BezierLine(start, control))
                 .setLinearHeadingInterpolation(start.getHeading(), end.getHeading())
+                .addPath(new BezierLine(control, end))
                 .build();
 
         PathChain path2 = follower.pathBuilder()
@@ -266,12 +273,12 @@ public class Robot {
                     break;
 
                 case BR_I:
-                    paths = buildAutoCyclePaths(P.BR_ScoringPose, new Pose(72 + P.cycleEndDX + P.bottomCycleEndDXCorrection, P.rowI, 0));
+                    paths = buildAutoCyclePaths(P.BR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowI, 0));
                     autoCycle(paths[0], paths[1], true, true);
                     break;
 
                 case BR_II:
-                    paths = buildAutoCyclePaths(P.BR_ScoringPose, new Pose(72 + P.cycleEndDX + P.bottomCycleEndDXCorrection, P.rowII, 0));
+                    paths = buildAutoCyclePaths(P.BR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowII, 0));
                     autoCycle(paths[0], paths[1], true, true);
                     break;
 
@@ -414,7 +421,7 @@ public class Robot {
             case 10:
                 if (!follower.isBusy()) {
                     Pose currentPose = follower.getPose();
-                    Pose triggerPose = P.triggerPose;
+                    Pose triggerPose = (redAlliance) ? P.R_TriggerPose : P.L_TriggerPose;
 
                     PathChain goTrigger = follower.pathBuilder()
                             .addPath(new BezierLine(currentPose, triggerPose))
@@ -430,10 +437,11 @@ public class Robot {
             case 11:
                 if (!follower.isBusy()) {
                     Pose currentPose = follower.getPose();
+                    Pose triggerPose = (redAlliance) ? P.R_TriggerPose : P.L_TriggerPose;
 
                     PathChain comeBack = follower.pathBuilder() // go prepare for the back path
-                            .addPath(new BezierLine(currentPose, P.triggerPose))
-                            .setLinearHeadingInterpolation(currentPose.getHeading(), P.triggerPose.getHeading())
+                            .addPath(new BezierLine(currentPose, triggerPose))
+                            .setLinearHeadingInterpolation(currentPose.getHeading(), triggerPose.getHeading())
                             .build();
 
                     autoCycleState = -1;
@@ -470,6 +478,9 @@ public class Robot {
 
     public void init () {
         follower = Constants.createFollower(hardwareMap);
+
+        P.buildMainPoses();
+        P.buildOtherAutoPaths(follower);
     }
 
     public static final startingPoses[] allStartingPoses = startingPoses.values();
@@ -484,7 +495,12 @@ public class Robot {
             startingSelection = (startingSelection - 1 + allStartingPoses.length) % allStartingPoses.length;
         }
 
-        telemetry.addData("starting pose", allStartingPoses[startingSelection]);
+        if (gamepad1.xWasPressed()) {
+            redAlliance = !redAlliance;
+        }
+
+        telemetry.addData("starting pose (bumpers)", allStartingPoses[startingSelection]);
+        telemetry.addData("red alliance (x)", redAlliance);
         telemetry.update();
     }
 
@@ -505,7 +521,12 @@ public class Robot {
             cycle = autoCycleList[triggerCycleNumber];
         }
 
-        telemetry.addData("the cycle during which the trigger will be triggered", cycle);
+        if (gamepad1.xWasPressed()) {
+            redAlliance = !redAlliance;
+        }
+
+        telemetry.addData("the cycle during which the trigger will be triggered (bumpers)", cycle);
+        telemetry.addData("red alliance (x)", redAlliance);
         telemetry.update();
     }
 
@@ -514,19 +535,6 @@ public class Robot {
         teleOpState = 0;
 
         follower.setStartingPose(P.startingPose);
-
-        if (redAlliance) {
-            P.triggerPose = P.R_TriggerPose;
-            P.parkingPose = P.L_ParkingPose;
-        }
-
-        else {
-            P.triggerPose = P.L_TriggerPose;
-            P.parkingPose = P.R_ParkingPose;
-        }
-
-        P.buildMainPoses();
-        P.buildOtherAutoPaths(follower);
 
         follower.startTeleopDrive(true);
     }
@@ -549,7 +557,11 @@ public class Robot {
     }
 
     public void setBackServo (boolean status) {
-        backServo.setPower(status ? 1 : 0);
+        backServo.setPower(status ? SERVOPOWER : 0);
+    }
+
+    public void setGateServo (boolean status) {
+        gateServo.setPosition((status ? 90 : 0) / gateMotionRange);
     }
 
     public boolean checkUpToSpeed (DcMotorEx motor, double targetSpeed) {
