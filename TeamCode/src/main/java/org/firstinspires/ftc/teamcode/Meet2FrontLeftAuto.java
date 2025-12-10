@@ -28,12 +28,12 @@
  */
 
 package org.firstinspires.ftc.teamcode;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
-@Autonomous(name="Meet 2: BR Auto", group="Robot")
-public class Meet2BackRightAuto extends OpMode {
+@Autonomous(name="Meet 2: FL Auto", group="Robot")
+public class Meet2FrontLeftAuto extends OpMode {
 
     private Robot robot;
 
@@ -43,17 +43,17 @@ public class Meet2BackRightAuto extends OpMode {
     }
 
     public void init () {
-        robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2, true);
+        robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2, false);
         robot.init();
-        robot.setBackAuto(true);
+        robot.setBackAuto(false);
 
         robot.setAutoCycleList(
             new autoCycles[] {
-                autoCycles.BR_PRELOAD, // 0
-                autoCycles.BR_II, // so i can push the trigger after i pick up these balls
-                autoCycles.BR_I,
-                autoCycles.BR_III,
-                autoCycles.BR_END,
+                autoCycles.FL_PRELOAD, // 0
+                autoCycles.FL_II, // so i can push the trigger after i pick up these balls
+                autoCycles.FL_I,
+                autoCycles.FL_III,
+                autoCycles.FL_END,
             }
         );
     }
@@ -63,7 +63,7 @@ public class Meet2BackRightAuto extends OpMode {
     }
 
     public void start () {
-        P.setStartingPose(startingPoses.BR);
+        P.setStartingPose(startingPoses.FL);
         robot.start();
     }
 }

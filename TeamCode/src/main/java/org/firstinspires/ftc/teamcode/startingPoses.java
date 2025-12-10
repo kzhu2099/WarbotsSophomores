@@ -4,4 +4,6 @@ public enum startingPoses {
     CURRENT,
     BR,
     BL, // TODO: Find other auto cycles
+    FR,
+    FL,
 }

@@ -13,37 +13,38 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 public class Constants {
+    // TODO: Improve tunin
     public static FollowerConstants followerConstants = new FollowerConstants()
             .mass(13) // estimate from Mack: 25 pounds, overestimate is better
             .forwardZeroPowerAcceleration(-42.4)
             .lateralZeroPowerAcceleration(-73.3)
             .translationalPIDFCoefficients(new PIDFCoefficients(
-                    0.5,
+                    0.4,
                     0.01,
                     0.1,
                     0
             ))
-            .translationalPIDFSwitch(4)
+            .translationalPIDFSwitch(6)
             .secondaryTranslationalPIDFCoefficients(new PIDFCoefficients(
-                    0.05,
-                    0.0001,
                     0.01,
+                    0.0001,
+                    0.05,
                     0
             ))
             .headingPIDFCoefficients(new PIDFCoefficients(
-                    0.8,
-                    0.001,
-                    0.001,
+                    1,
+                    0.005,
+                    0.05,
                     0
             ))
             .secondaryHeadingPIDFCoefficients(new PIDFCoefficients(
-                    2.5,
-                    0.00001,
+                    4,
+                    0.001,
                     0.1,
                     0
             ))
             .drivePIDFCoefficients(new FilteredPIDFCoefficients(
-                    0.5,
+                    0.4,
                     0.01,
                     0.01,
                     0.6,
@@ -79,23 +80,15 @@ public class Constants {
             .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED)
             .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD);
 
-    /**
-     These are the PathConstraints in order:
-     tValueConstraint, velocityConstraint, translationalConstraint, headingConstraint, timeoutConstraint,
-     brakingStrength, BEZIER_CURVE_SEARCH_LIMIT, brakingStart
-
-     The BEZIER_CURVE_SEARCH_LIMIT should typically be left at 10 and shouldn't be changed.
-     */
-
     public static PathConstraints pathConstraints = new PathConstraints(
             0.995,
-            0.1,
-            0.1,
-            0.009,
+            0.25,
+            0.25,
+            Math.toRadians(0.5),
             50,
-            1.05,
+            1.0,
             10,
-            0.7
+            0.9
     );
 
     //Add custom localizers or drivetrains here
