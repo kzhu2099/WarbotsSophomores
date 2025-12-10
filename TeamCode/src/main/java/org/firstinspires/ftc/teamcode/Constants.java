@@ -31,14 +31,14 @@ public class Constants {
                     0
             ))
             .headingPIDFCoefficients(new PIDFCoefficients(
-                    0.8,
-                    0.001,
+                    1,
+                    0.0005,
                     0.001,
                     0
             ))
             .secondaryHeadingPIDFCoefficients(new PIDFCoefficients(
                     2.5,
-                    0.00001,
+                    0.0001,
                     0.1,
                     0
             ))
@@ -95,7 +95,7 @@ public class Constants {
             50,
             1.05,
             10,
-            0.7
+            0.9
     );
 
     //Add custom localizers or drivetrains here

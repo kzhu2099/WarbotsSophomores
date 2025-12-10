@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.pedropathing.geometry.BezierCurve;
+import com.pedropathing.geometry.BezierPoint;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -28,9 +29,10 @@ public class Robot {
     private final CRServo backServo;
     private final Servo gateServo;
 
-    private static final double gateMotionRange = 180;
+    private static final double gateOffPosition = 0.2;
+    private static final double gateOnPosition = 0;
 
-    private static final double SENSITIVITY = 0.05;
+    private static final double SENSITIVITY = 0.1;
     private static final double SERVOPOWER = 1;
     private static final double INTAKEPOWER = 0.5;
     private static final double FRONTOUTTAKERPM = 3400;
@@ -62,6 +64,8 @@ public class Robot {
     private int teleOpState = 0;
     private int autoCycleState = 0;
 
+    private double autoaimangle = 0;
+
     public Robot (HardwareMap hardwareMap, Telemetry telemetry, Gamepad gamepad1, Gamepad gamepad2, boolean _redAlliance) {
         this.hardwareMap = hardwareMap;
         this.telemetry = telemetry;
@@ -74,15 +78,15 @@ public class Robot {
         outtakeRightMotor = (DcMotorEx) hardwareMap.get(DcMotor.class, "ro");
 
         // frontServo = hardwareMap.get(CRServo.class, "Front Servo");
-        backServo = hardwareMap.get(CRServo.class, "bs");
-        gateServo = null; //hardwareMap.get(Servo.class, "gs");
+        backServo = null;//hardwareMap.get(CRServo.class, "bs");
+        gateServo = hardwareMap.get(Servo.class, "gs");
         // odometry = hardwareMap.get(GoBildaPinpointDriver.class, "odom");
 
         intakeMotor.setDirection(DcMotor.Direction.REVERSE);
         outtakeLeftMotor.setDirection(DcMotor.Direction.REVERSE);
         outtakeRightMotor.setDirection(DcMotor.Direction.FORWARD);
 
-        backServo.setDirection(CRServo.Direction.REVERSE);
+        // backServo.setDirection(CRServo.Direction.REVERSE);
         // gateServo.setDirection(Servo.Direction.REVERSE);
 
         outtakeLeftMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
@@ -102,17 +106,19 @@ public class Robot {
 
     public void teleOpLoop () {
         follower.update();
-        if (teleOpState == 0 && gamepad1.bWasPressed() && !follower.isBusy()) {
+        if (teleOpState == 0 && gamepad1.yWasPressed() && !follower.isBusy()) {
             teleOpState = 1;
+            follower.breakFollowing();
             autoAim();
-        }
 
-        else if (teleOpState == 0 && gamepad1.aWasPressed() && !follower.isBusy()) {
+        } else if (teleOpState == 0 && gamepad1.xWasPressed() && !follower.isBusy()) {
             teleOpState = 2;
+            follower.breakFollowing();
             parkRobot();
         }
 
         if (teleOpState == 0) {
+            // follower.startTeleopDrive(true);
             boolean slowMove = gamepad1.right_trigger > SENSITIVITY;
             double axial;
             double lateral;
@@ -122,9 +128,7 @@ public class Robot {
                 axial = -gamepad1.left_stick_y;  // Note: pushing stick forward gives negative value
                 lateral = -gamepad1.left_stick_x;
                 yaw = -gamepad1.right_stick_x;
-            }
-
-            else {
+            } else {
                 axial = -gamepad1.left_stick_y * 0.5;  // Note: pushing stick forward gives negative value
                 lateral = -gamepad1.left_stick_x * 0.5;
                 yaw = -gamepad1.right_stick_x * 0.5;
@@ -132,34 +136,17 @@ public class Robot {
 
             axial = redAlliance ? axial : -axial;
             lateral = redAlliance ? lateral : -lateral;
-            follower.setTeleOpDrive(axial, lateral, yaw, false);
-
-            /*
-            boolean slowMove = gamepad1.right_trigger > SENSITIVITY;
-
-            double slowSpeed = slowMove ? 0.5 : 1.0;
-            double frontLeftPower = slowSpeed * (axial + lateral + yaw);
-            double frontRightPower = slowSpeed * (axial - lateral - yaw);
-            double backLeftPower = slowSpeed * (axial - lateral + yaw);
-            double backRightPower = slowSpeed * (axial + lateral - yaw);
-
-            frontLeftDrive.setPower(frontLeftPower);
-            frontRightDrive.setPower(frontRightPower);
-            backLeftDrive.setPower(backLeftPower);
-            backRightDrive.setPower(backRightPower);
-            */
-        }
-
-        else if (teleOpState == 1) {
+            follower.setTeleOpDrive(axial, lateral, yaw, true);
+        } else if (teleOpState == 1) {
             if (!follower.isBusy()) {
                 teleOpState = 0;
+                follower.breakFollowing();
                 follower.startTeleopDrive(true);
             }
-        }
-
-        else if (teleOpState == 2) {
+        } else if (teleOpState == 2) {
             if (!follower.isBusy()) {
                 teleOpState = 0;
+                follower.breakFollowing();
                 follower.startTeleopDrive(true);
             }
         }
@@ -179,15 +166,16 @@ public class Robot {
 
         boolean outtakeUpToSpeed = checkUpToSpeed(outtakeLeftMotor, angularRate) && checkUpToSpeed(outtakeRightMotor, angularRate);
 
-        boolean backServoOn = gamepad2.y && outtakeUpToSpeed;
-        setBackServo(backServoOn);
-        // setGateServo(backServoOn);
+        boolean gateServoOn = gamepad2.y && outtakeUpToSpeed;
+        // setBackServo(backServoOn);
+        setGateServo(gateServoOn);
 
         telemetry.addData("intake status", "%b, %4.2f", intakeOn, INTAKEPOWER);
         telemetry.addData("outtake status", "%b, %4.2f", outtakeOn, angularRate);
-        telemetry.addData("back servo status", "%b", backServoOn);
+        telemetry.addData("gate servo status", 0);
         telemetry.addData("driving status", teleOpState);
         telemetry.addData("follower is busy", follower.isBusy());
+        telemetry.addData("auto aim angle", Math.toDegrees(autoaimangle));
 
         allTelemetry();
     }
@@ -197,28 +185,24 @@ public class Robot {
         double x = currentPose.getX();
         double y = currentPose.getY();
         double heading;
-        Pose targetPose;
-        Pose intermediatePose;
 
-        int k = 10;
         PathChain autoAimPath;
         if (redAlliance) {
-            heading = Math.atan((140 - (y)) / (140 - (x - HW))) + Math.PI; // middle of robot, turn to outtake
-            intermediatePose = new Pose(x + k, y + k, heading / 2);
-            targetPose = new Pose(x, y, heading);
-
+            // TODO: Consider using 138 instead of 144.
+            heading = Math.atan((138.0 - (y + HL)) / (138.0 - (x))) + Math.PI; // middle of robot, turn to outtake
+            autoaimangle = heading;
             autoAimPath = follower.pathBuilder()
-                    .addPath(new BezierLine(currentPose, intermediatePose))
-                    .setLinearHeadingInterpolation(currentPose.getHeading(), intermediatePose.getHeading())
-                    .addPath(new BezierLine(intermediatePose, targetPose))
-                    .setLinearHeadingInterpolation(intermediatePose.getHeading(), heading)
+                    .addPath(new BezierPoint(currentPose))
+                    .setConstantHeadingInterpolation(heading)
                     .build();
+            // TODO: why is it not going the full way each time?
         }
 
         else {
             autoAimPath = null;
         }
 
+        follower.breakFollowing();
         follower.followPath(autoAimPath);
     }
 
@@ -230,6 +214,7 @@ public class Robot {
                 .setLinearHeadingInterpolation(currentPose.getHeading(), parkingPose.getHeading())
                 .build();
 
+        follower.breakFollowing();
         follower.followPath(parkPath);
     }
 
@@ -499,7 +484,7 @@ public class Robot {
             redAlliance = !redAlliance;
         }
 
-        telemetry.addData("starting pose (bumpers)", allStartingPoses[startingSelection]);
+        telemetry.addData("starting pose (dPad)", allStartingPoses[startingSelection]);
         telemetry.addData("red alliance (x)", redAlliance);
         telemetry.update();
     }
@@ -561,7 +546,7 @@ public class Robot {
     }
 
     public void setGateServo (boolean status) {
-        gateServo.setPosition((status ? 90 : 0) / gateMotionRange);
+        gateServo.setPosition(status ? gateOnPosition : gateOffPosition);
     }
 
     public boolean checkUpToSpeed (DcMotorEx motor, double targetSpeed) {
