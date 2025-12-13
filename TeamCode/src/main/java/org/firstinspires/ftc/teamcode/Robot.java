@@ -50,15 +50,10 @@ public class Robot {
     public static final double HW = WIDTH / 2;
     public static final double HL = LENGTH / 2;
 
-    private static double ERRORCOUNT = 0;
+    private static double SLEEPERRORS = 0;
 
     private Follower follower;
     private static boolean redAlliance;
-    private static boolean backAuto;
-
-    public void setRedAlliance(boolean red) {
-        redAlliance = red;
-    }
 
     private autoCycles[] autoCycleList;
 
@@ -74,7 +69,6 @@ public class Robot {
     private int autoCycleState = 0;
 
     private boolean autoAimed = false;
-    private static final double autoAimThreshold = Math.toRadians(2.5);
 
     public Robot (HardwareMap hardwareMap, Telemetry telemetry, Gamepad gamepad1, Gamepad gamepad2, boolean _redAlliance) {
         this.hardwareMap = hardwareMap;
@@ -105,10 +99,6 @@ public class Robot {
 
         telemetry.addData("Status", "Initialized");
         telemetry.update();
-    }
-
-    public void setBackAuto(boolean value) {
-        backAuto = value;
     }
 
     public void setAutoCycleList(autoCycles[] autoCycleList) {
@@ -410,7 +400,7 @@ public class Robot {
                             try {
                                 Thread.sleep(1000);
                             } catch (Exception e) {
-                                ERRORCOUNT++;
+                                SLEEPERRORS++;
                             }
 
                             autoCycleState = 1;
@@ -474,7 +464,7 @@ public class Robot {
                                 Thread.sleep(intakeWaitTime) ;
                                 setIntake(false);
                             } catch (Exception e) {
-                                ERRORCOUNT++;
+                                SLEEPERRORS++;
                             }
                         }
 
@@ -504,25 +494,25 @@ public class Robot {
                         try {
                             Thread.sleep(gateWaitTime);
                         } catch (Exception e) {
-                            ERRORCOUNT++;
+                            SLEEPERRORS++;
                         }
                         setGateServo(true);
 
                         try {
                             Thread.sleep(autoIntakeWaitTime);
                         } catch (Exception e) {
-                            ERRORCOUNT++;
+                            SLEEPERRORS++;
                         }
                         setIntakeSlow(true);
 
                         try {
                             Thread.sleep(shootingTime);
                         } catch (Exception e) {
-                            ERRORCOUNT++;
+                            SLEEPERRORS++;
                         }
 
                         setGateServo(false);
-                        setIntake(false);
+                        setIntakeSlow(false);
                         setOuttake(false, backShootPower);
 
                         autoCycleState = 1000; // so it isn't in a different thread, it happens on the main line --> only once
@@ -565,7 +555,7 @@ public class Robot {
                         try {
                             Thread.sleep(triggerTime);
                         } catch (Exception e) {
-                            ERRORCOUNT++;
+                            SLEEPERRORS++;
                         }
 
                         follower.followPath(comeBack);
@@ -692,6 +682,6 @@ public class Robot {
         telemetry.addData("position x", follower.getPose().getX());
         telemetry.addData("position y", follower.getPose().getY());
         telemetry.addData("position rotation", Math.toDegrees(follower.getHeading()));
-        telemetry.addData("errors caught", ERRORCOUNT);
+        telemetry.addData("errors caught", SLEEPERRORS);
     }
 }

@@ -45,7 +45,6 @@ public class Meet2BackLeftAuto extends OpMode {
     public void init () {
         robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2, false);
         robot.init();
-        robot.setBackAuto(true);
 
         robot.setAutoCycleList(
             new autoCycles[] {
