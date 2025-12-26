@@ -1,12 +1,14 @@
 package org.firstinspires.ftc.teamcode;
 
+import androidx.annotation.NonNull;
+
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 
 public class P {
-    public static Pose startingPose = new Pose(0, 0, 0);
+    public static Pose startingPose;
 
     public static Pose BR_ScoringPose;
     public static Pose FR_ScoringPose;
@@ -23,11 +25,11 @@ public class P {
     public static Pose R_ParkingPose;
     public static Pose L_ParkingPose;
 
-    public static final double scoringDX = 14;
+    public static final double scoringDX = 20;
     public static final double cycleEndDX = 50;
     public static final double triggerPoseDX = 55;
-    public static final double backScoringY = 15;
-    public static final double frontScoringY = 144 - 58; // TODO: find this y
+    public static final double backScoringY = 20;
+    public static final double frontScoringY = 72 + 15; // TODO: find this y
 
     public static final double rowI = 36;
     public static final double rowII = 60;
@@ -60,11 +62,11 @@ public class P {
                 break;
 
             case FR:
-                startingPose = new Pose (72 + 36, 144 - Robot.HL, Math.toRadians(90));
+                startingPose = new Pose (72 + 48 - Robot.HW, 144 - Robot.HL, Math.toRadians(90));
                 break;
 
             case FL:
-                startingPose = new Pose (72 - 36, 144 - Robot.HL, Math.toRadians(90));
+                startingPose = new Pose (72 - 48 + Robot.HW, 144 - Robot.HL, Math.toRadians(90));
                 break;
         }
     }
@@ -75,12 +77,16 @@ public class P {
 
         BR_ScoringPose = new Pose (72 + scoringDX, backScoringY, backAngle);
         FR_ScoringPose = new Pose (72 + scoringDX, frontScoringY, frontAngle);
-        BL_ScoringPose = new Pose (72 - scoringDX, backScoringY, Math.toRadians(180) - backAngle);
-        FL_ScoringPose = new Pose (72 - scoringDX, frontScoringY, Math.toRadians(180) - frontAngle);
 
-        BR_EndingPose = new Pose (72 + 40, 40, Math.toRadians(90));
-        FR_EndingPose = new Pose (72 - 40, 40, Math.toRadians(90));
-        BL_EndingPose = new Pose (72 + 40, 144 - 60, Math.toRadians(60));
+        backAngle = 0 - Math.atan((138 - backScoringY) / (72 - scoringDX));
+        frontAngle = 0 - Math.atan((138 - frontScoringY) / (72 - scoringDX));
+
+        BL_ScoringPose = new Pose (72 - scoringDX, backScoringY, backAngle);
+        FL_ScoringPose = new Pose (72 - scoringDX, frontScoringY, frontAngle);
+
+        BR_EndingPose = new Pose (72 + 40, 40, Math.toRadians(270));
+        BL_EndingPose = new Pose (72 - 40, 40, Math.toRadians(270));
+        FR_EndingPose = new Pose (72 + 40, 144 - 60, Math.toRadians(60));
         FL_EndingPose = new Pose (72 - 40, 144 - 60, Math.toRadians(180 - 60));
 
         R_TriggerPose = new Pose (72 + triggerPoseDX, rowTrigger, Math.toRadians(0));
@@ -90,7 +96,7 @@ public class P {
         L_ParkingPose = new Pose (72 - 33, 33, Math.toRadians(90));
     }
 
-    public static void buildOtherAutoPaths (Follower follower) {
+    public static void buildOtherAutoPaths (@NonNull Follower follower) {
         BR_Preload = follower.pathBuilder()
                 .addPath(new BezierLine(P.startingPose, P.BR_ScoringPose))
                 .setLinearHeadingInterpolation(P.startingPose.getHeading(), P.BR_ScoringPose.getHeading())

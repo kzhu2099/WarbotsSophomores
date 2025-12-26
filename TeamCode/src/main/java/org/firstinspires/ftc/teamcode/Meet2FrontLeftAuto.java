@@ -65,4 +65,8 @@ public class Meet2FrontLeftAuto extends OpMode {
         P.setStartingPose(startingPoses.FL);
         robot.start();
     }
+
+    public void stop () {
+        robot.stop();
+    }
 }

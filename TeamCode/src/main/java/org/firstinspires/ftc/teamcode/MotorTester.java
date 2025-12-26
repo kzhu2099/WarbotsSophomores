@@ -1,4 +1,5 @@
-/* Copyright (c) 2017 FIRST. All rights reserved.
+/* Copyright (c) 2021 FIRST. All rights reserved.
+ * TESTING TESTING
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted (subject to the limitations in the disclaimer below) provided that
@@ -29,44 +30,60 @@
 
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
-@Autonomous(name="Meet 2: FR Auto", group="Robot")
-public class Meet2FrontRightAuto extends OpMode {
+@TeleOp(name="Motor Tester", group="OpMode")
+// @Disabled
+public class MotorTester extends OpMode {
 
-    private Robot robot;
+    private DcMotor br;
+    private DcMotor bl;
+    private DcMotor fr;
+    private DcMotor fl;
 
-    public void loop () {
-        robot.autoLoop();
-        telemetry.update();
+    public void loop() {
+        int direction = (gamepad1.a) ? -1 : 1;
+        if (gamepad1.left_bumper) {
+            bl.setPower(direction * gamepad1.left_trigger);
+            fl.setPower(0);
+        }
+        else {
+            fl.setPower(direction * gamepad1.left_trigger);
+            bl.setPower(0);
+        }
+
+        if (gamepad1.right_bumper) {
+            br.setPower(direction * gamepad1.right_trigger);
+            fr.setPower(0);
+        }
+        else {
+            fr.setPower(direction * gamepad1.right_trigger);
+            br.setPower(0);
+        }
     }
 
     public void init () {
-        robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2, true);
-        robot.init();
+        br = hardwareMap.get(DcMotor.class, "br");
+        bl = hardwareMap.get(DcMotor.class, "bl");
+        fr = hardwareMap.get(DcMotor.class, "fr");
+        fl = hardwareMap.get(DcMotor.class, "fl");
 
-        robot.setAutoCycleList(
-            new autoCycles[] {
-                autoCycles.FR_PRELOAD, // 0
-                autoCycles.FR_II, // so i can push the trigger after i pick up these balls
-                autoCycles.FR_I,
-                autoCycles.FR_III,
-                autoCycles.FR_END,
-            }
-        );
+        bl.setDirection(DcMotorSimple.Direction.REVERSE);
+        fl.setDirection(DcMotorSimple.Direction.REVERSE);
     }
 
     public void init_loop () {
-        robot.autoInitLoop();
+
     }
 
     public void start () {
-        P.setStartingPose(startingPoses.FR);
-        robot.start();
+
     }
 
     public void stop () {
-        robot.stop();
+
     }
 }

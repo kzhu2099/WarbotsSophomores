@@ -33,7 +33,7 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-@TeleOp(name="Meet 2: TeleOp", group="Linear OpMode")
+@TeleOp(name="Meet 3: TeleOp", group="OpMode")
 // @Disabled
 public class Meet2TeleOp extends OpMode {
 
@@ -51,6 +51,7 @@ public class Meet2TeleOp extends OpMode {
 
     public void init_loop () {
         robot.teleOpInitLoop();
+        // telemetry.addData("pose", "%4.2f, %4.2f", P.startingPose.getX(), P.startingPose.getY());
     }
 
     public void start () {

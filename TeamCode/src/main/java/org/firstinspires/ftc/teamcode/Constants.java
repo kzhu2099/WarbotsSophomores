@@ -13,13 +13,12 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 public class Constants {
-    // TODO: Improve tunin
     public static FollowerConstants followerConstants = new FollowerConstants()
             .mass(13) // estimate from Mack: 25 pounds, overestimate is better
-            .forwardZeroPowerAcceleration(-42.4)
-            .lateralZeroPowerAcceleration(-73.3)
+            .forwardZeroPowerAcceleration(-47)
+            .lateralZeroPowerAcceleration(-80)
             .translationalPIDFCoefficients(new PIDFCoefficients(
-                    0.4,
+                    0.35,
                     0.01,
                     0.1,
                     0
@@ -33,27 +32,28 @@ public class Constants {
             ))
             .headingPIDFCoefficients(new PIDFCoefficients(
                     1,
-                    0.005,
+                    0.008,
                     0.05,
                     0
             ))
+            .headingPIDFSwitch(Math.toRadians(15))
             .secondaryHeadingPIDFCoefficients(new PIDFCoefficients(
-                    4,
-                    0.001,
-                    0.1,
+                    1.2,
+                    0.008,
+                    0.005,
                     0
             ))
             .drivePIDFCoefficients(new FilteredPIDFCoefficients(
-                    0.4,
+                    0.5,
                     0.01,
-                    0.01,
+                    0.02,
                     0.6,
                     0
             ))
             .secondaryDrivePIDFCoefficients(new FilteredPIDFCoefficients(
-                    0.01,
+                    0.03,
                     0,
-                    0.00005,
+                    0.0001,
                     0.6,
                     0
             ))
@@ -86,7 +86,7 @@ public class Constants {
             0.25,
             Math.toRadians(0.5),
             50,
-            1.0,
+            1.1,
             10,
             0.9
     );
