@@ -1,7 +1,10 @@
 package org.firstinspires.ftc.teamcode;
 
+import com.pedropathing.control.FilteredPIDFCoefficients;
+import com.pedropathing.control.PIDFCoefficients;
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierPoint;
+import com.pedropathing.paths.PathConstraints;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -29,15 +32,15 @@ public class Robot {
     private final CRServo backServo;
     private final Servo gateServo;
 
-    private static final double gateOffPosition = 0.16;
-    private static final double gateOnPosition = 0;
+    private static final double gateOffPosition = 0.2;
+    private static final double gateOnPosition = 0.025;
 
     private static final double SENSITIVITY = 0.1;
     private static final double SERVOPOWER = 1;
-    private static final double INTAKEPOWER = 0.7;
-    private static final double SLOWINTAKEPOWER = 0.5;
+    private static final double INTAKEPOWER = 0.77;
+    private static final double SLOWINTAKEPOWER = 0.67;
     private static final double FRONTOUTTAKERPM = 3500;
-    private static final double BACKOUTTAKERPM = 3530;
+    private static final double BACKOUTTAKERPM = 3500;
     // private static final double EMERGENCYOUTTAKERPM = 5500;
     private static final double OUTTAKECPR = 28;
     private static final double frontOuttakeAngularRate = toAngularRate(FRONTOUTTAKERPM, OUTTAKECPR);
@@ -45,8 +48,8 @@ public class Robot {
     // private static final double emergencyOuttakeAngularRate = toAngularRate(EMERGENCYOUTTAKERPM, OUTTAKECPR);
     private static final double UPTOSPEEDTHRESHOLD = 0.99; // measuring velocity is not always accurate so this will be triggered
 
-    public static final double WIDTH = 17.5;
-    public static final double LENGTH = 17;
+    public static final double WIDTH = 18;
+    public static final double LENGTH = 18;
     public static final double HW = WIDTH / 2;
     public static final double HL = LENGTH / 2;
 
@@ -57,17 +60,16 @@ public class Robot {
 
     private autoCycles[] autoCycleList;
 
-    private static final int baseDeltaY = 2;
-    private static final int shootingTimeOnA = 180;
-    private static final int shootingTimeOnB = 270;
-    private static final int shootingTimeOff = 500;
+    private static final int baseDeltaY = 0; // should be zero unless bad
+    private static final int shootingTimeOnA = 120; // the best
+    private static final int shootingTimeOnB = 250; // also the best
+    private static final int shootingTimeOff = 400; // also pretty good though could be shorter
 
     // TODO: Fix the shooting so it is more accurate and not burst
     // TODO: instead of one shooting time, do two different variables
-    private static final int gateWaitTime = 200;
     private static final int autoCycleAimTime = 500;
     private static final int triggerTime = 500;
-    private static final int intakeWaitTime = 500;
+    private static final int intakeWaitTime = 800;
     private static int triggerCycleNumber = -1;
 
     private int cycleNumber = 0;
@@ -215,7 +217,7 @@ public class Robot {
                 thread.start();
             }
         } else if (teleOpShootState == 2) {
-            if (gamepad2.leftBumperWasReleased()) {
+            if (gamepad2.yWasReleased()) {
                 teleOpShootState = 0;
             }
         }
@@ -240,14 +242,13 @@ public class Robot {
 
         PathChain autoAimPath;
         if (redAlliance) {
-            // NOTE: 138 is better than 144, maybe remove the HL?
             // NOTE: It seems to be aiming too low
-            heading = Math.atan((138 - (y)) / (138 - (x))) + Math.PI; // middle of robot, turn to outtak
+            heading = Math.atan((144 - (y)) / (144 - (x))) + Math.PI; // middle of robot, turn to outtak
             // TODO: why is it not going the full way each time?
         }
 
         else {
-            heading = 0 - Math.atan((138 - (y)) / ((x))); // middle of robot, turn to outtake
+            heading = 0 - Math.atan((144 - (y)) / ((x))); // middle of robot, turn to outtake
             // TODO: why is it not going the full way each time?
         }
 
@@ -308,21 +309,61 @@ public class Robot {
         PathChain path1 = follower.pathBuilder()
                 .addPath(new BezierCurve(start, control, control, end))
                 .setConstantHeadingInterpolation(end.getHeading())
-                .setBrakingStart(0.25) // TODO: Make this more accurate, either by increasing or decreasing
-                //.setBrakingStrength(0.5)
-                //.setGlobalDeceleration(0.25)
+                .setBrakingStart(0.8) // TODO: Make this more accurate, either by increasing or decreasing
+                //.setBrakingStrength(0.8)
+                .setGlobalDeceleration(0.6)
                 //.setTranslationalConstraint(1)
                 //.setVelocityConstraint(5)
                 .build();
 
         PathChain path2 = follower.pathBuilder()
                 .addPath(new BezierCurve(end, control, start))
-                .setLinearHeadingInterpolation(end.getHeading(), start.getHeading())
+                .setConstantHeadingInterpolation(start.getHeading())
                 .setBrakingStart(0.5) // TODO: Make this more accurate, either by increasing or decreasing
                 //.setBrakingStrength(0.5)
+                .setGlobalDeceleration(0.4)
                 .build();
 
         return new PathChain[] {path1, path2};
+    }
+
+    public void autoShoot (int endState, boolean backShoot, boolean nextCycle) {
+        setOuttake(true, backShoot);
+
+        if (checkUpToSpeed(outtakeLeftMotor, backShoot) && checkUpToSpeed(outtakeRightMotor, backShoot) && !follower.isBusy()) {
+            autoCycleState = -1;
+
+            Thread thread = new Thread(() -> {
+                setGateServo(true);
+                setIntakeSlow(true);
+
+                try {
+                    for (int i = 0; i < 4; i++) {
+                        Thread.sleep(shootingTimeOnA);
+                        setIntakeSlow(false);
+                        Thread.sleep(shootingTimeOnB);
+                        setGateServo(false);
+                        Thread.sleep(shootingTimeOff);
+                        setGateServo(true);
+                        setIntakeSlow(true);
+                    }
+                } catch (Exception e) {
+                    SLEEPERRORS++;
+                }
+
+                setGateServo(false);
+                setIntakeSlow(false);
+                setOuttake(false, backShoot);
+
+                if (nextCycle) {
+                    cycleNumber++;
+                }
+
+                autoCycleState = endState; // so it isn't in a different thread, it happens on the main line --> only once
+            });
+
+            thread.start();
+        }
     }
 
     public void autoLoop () {
@@ -338,7 +379,7 @@ public class Robot {
             currentCycle = autoCycles.NONE;
         }
 
-        if (!follower.isBusy() || autoCycleState == 0) { // won't change if it is busy, the == 0 shouldn't happen
+        if ((!follower.isBusy() || autoCycleState == 0) && autoCycleState != -1) { // won't change if it is busy, the == 0 shouldn't happen
             PathChain[] paths;
             switch (currentCycle) {
                 case NONE:
@@ -400,12 +441,13 @@ public class Robot {
                     autoCycle(P.FR_End, null, false, false);
                     break;
 
-                case BL_PRELOAD_GO:
+                case BL_INIT:
                     autoCycle(P.BL_Preload, null, false, true);
+                    setOuttake(true, true);
                     break;
 
                 case BL_PRELOAD:
-                    autoCycle(null, null, true, true);
+                    autoShoot(0, true, true);
                     break;
 
                 case BL_I:
@@ -421,6 +463,11 @@ public class Robot {
                 case BL_III:
                     paths = buildAutoCyclePaths(P.BL_ScoringPose, new Pose(72 - P.cycleEndDX, P.rowIII, Math.toRadians(180)), true);
                     autoCycle(paths[0], paths[1], true, true);
+                    break;
+
+                case BL_III_PICKUP:
+                    paths = buildAutoCyclePaths(P.BL_ScoringPose, new Pose(72 - P.cycleEndDX, P.rowIII, Math.toRadians(180)), true);
+                    autoCycle(paths[0], null, true, true);
                     break;
 
                 case BL_TRIGGER:
@@ -512,14 +559,18 @@ public class Robot {
                         setGateServo(false);
                         setIntake(true);
                     }
-                }
 
-                if (triggerCycleNumber == cycleNumber) {
-                    autoCycleState = 10;
+                    if (triggerCycleNumber == cycleNumber) {
+                        autoCycleState = 10;
+                    }
+
+                    else {
+                        autoCycleState = 1;
+                    }
                 }
 
                 else {
-                    autoCycleState = 1;
+                    autoCycleState = 1000;
                 }
 
                 break;
@@ -541,9 +592,13 @@ public class Robot {
 
                         if (back != null) {
                             follower.followPath(back);
+                            autoCycleState = 2;
                         }
 
-                        autoCycleState = 2;
+                        else {
+                            setOuttake(false, false);
+                            autoCycleState = 1000;
+                        }
                     });
 
                     thread.start();
@@ -552,52 +607,43 @@ public class Robot {
                 break;
 
             case 2:
+                if (!follower.isBusy()) {
+                    if (!useBalls) {
+                        autoCycleState = 3;
+                    }
+
+                    else {
+                        autoCycleState = -1;
+
+                        Thread thread = new Thread(() -> {
+                            try {
+                                PathChain autoAimPath = getAutoAimPath();
+                                follower.breakFollowing();
+                                turnMode();
+                                follower.followPath(autoAimPath);
+                                Thread.sleep(autoCycleAimTime);
+                                follower.breakFollowing();
+                                regularMode();
+                            } catch (Exception e) {
+                                SLEEPERRORS++;
+                            }
+
+                            autoCycleState = 3;
+                        });
+
+                        thread.start();
+                    }
+                }
+
+                break;
+
+            case 3:
                 if (!useBalls) {
                     autoCycleState = 1000;
                 }
 
-                else if (checkUpToSpeed(outtakeLeftMotor, backShoot) && checkUpToSpeed(outtakeRightMotor, backShoot) && !follower.isBusy()) {
-
-                    autoCycleState = -1; // prevent 2 again but also not 0
-
-                    Thread thread = new Thread(() -> {
-                        try {
-                            PathChain autoAimPath = getAutoAimPath();
-                            follower.breakFollowing();
-                            turnMode();
-                            follower.followPath(autoAimPath);
-                            Thread.sleep(autoCycleAimTime);
-                            follower.breakFollowing();
-                            regularMode();
-                        } catch (Exception e) {
-                            SLEEPERRORS++;
-                        }
-
-                        setGateServo(true);
-                        setIntakeSlow(true);
-
-                        try {
-                            for (int i = 0; i < 4; i++) {
-                                Thread.sleep(shootingTimeOnA);
-                                setIntakeSlow(false);
-                                Thread.sleep(shootingTimeOnB);
-                                setGateServo(false);
-                                Thread.sleep(shootingTimeOff);
-                                setGateServo(true);
-                                setIntakeSlow(true);
-                            }
-                        } catch (Exception e) {
-                            SLEEPERRORS++;
-                        }
-
-                        setGateServo(false);
-                        setIntakeSlow(false);
-                        setOuttake(false, backShoot);
-
-                        autoCycleState = 1000; // so it isn't in a different thread, it happens on the main line --> only once
-                    });
-
-                    thread.start();
+                else {
+                    autoShoot(1000, true, false);
                 }
 
                 break;

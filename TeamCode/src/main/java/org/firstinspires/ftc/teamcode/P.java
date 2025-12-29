@@ -31,6 +31,7 @@ public class P {
     public static final double backScoringY = 20;
     public static final double frontScoringY = 72 + 15; // TODO: find this y
 
+    public static final double rowHP = 12;
     public static final double rowI = 36;
     public static final double rowII = 60;
     public static final double rowIII = 84;
@@ -72,14 +73,14 @@ public class P {
     }
 
     public static void buildMainPoses () {
-        double backAngle = Math.atan((138 - backScoringY) / (138 - (72 + scoringDX))) + Math.toRadians(180);
-        double frontAngle = Math.atan((138 - frontScoringY) / (138 - (72 + scoringDX))) + Math.toRadians(180);
+        double backAngle = Math.atan((144 - backScoringY) / (144 - (72 + scoringDX))) + Math.toRadians(180);
+        double frontAngle = Math.atan((144 - frontScoringY) / (14 - (72 + scoringDX))) + Math.toRadians(180);
 
         BR_ScoringPose = new Pose (72 + scoringDX, backScoringY, backAngle);
         FR_ScoringPose = new Pose (72 + scoringDX, frontScoringY, frontAngle);
 
-        backAngle = 0 - Math.atan((138 - backScoringY) / (72 - scoringDX));
-        frontAngle = 0 - Math.atan((138 - frontScoringY) / (72 - scoringDX));
+        backAngle = 0 - Math.atan((144 - backScoringY) / (72 - scoringDX));
+        frontAngle = 0 - Math.atan((144 - frontScoringY) / (72 - scoringDX));
 
         BL_ScoringPose = new Pose (72 - scoringDX, backScoringY, backAngle);
         FL_ScoringPose = new Pose (72 - scoringDX, frontScoringY, frontAngle);

@@ -48,12 +48,12 @@ public class Meet2BackLeftAuto extends OpMode {
 
         robot.setAutoCycleList(
             new autoCycles[] {
-                autoCycles.BL_PRELOAD_GO,
-                autoCycles.BL_PRELOAD, // 0
+                autoCycles.BL_INIT,
+                // autoCycles.BL_PRELOAD, // 0
+                // autoCycles.BL_I,
                 // autoCycles.BL_II, // so i can push the trigger after i pick up these balls
-                autoCycles.BL_I,
-                // autoCycles.BL_III,
-                autoCycles.BL_END,
+                autoCycles.BL_III_PICKUP,
+                // autoCycles.BL_END,
             }
         );
     }

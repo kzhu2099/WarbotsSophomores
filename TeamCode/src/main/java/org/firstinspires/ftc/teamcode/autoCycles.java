@@ -17,11 +17,12 @@ public enum autoCycles {
     FR_TRIGGER,
     FR_END,
 
-    BL_PRELOAD_GO,
+    BL_INIT,
     BL_PRELOAD,
     BL_I,
     BL_II,
     BL_III,
+    BL_III_PICKUP,
     BL_TRIGGER,
     BL_END,
 
