@@ -26,8 +26,10 @@ public enum autoCycles {
     BL_TRIGGER,
     BL_END,
 
+    FL_INIT,
     FL_PRELOAD,
     FL_I,
+    FL_I_PICKUP,
     FL_II,
     FL_III,
     FL_TRIGGER,

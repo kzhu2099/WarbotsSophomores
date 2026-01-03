@@ -15,44 +15,44 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 public class Constants {
     public static FollowerConstants followerConstants = new FollowerConstants()
             .mass(13) // estimate from Mack: 25 pounds, overestimate is better
-            .forwardZeroPowerAcceleration(-47)
-            .lateralZeroPowerAcceleration(-80)
+            .forwardZeroPowerAcceleration(-35)
+            .lateralZeroPowerAcceleration(-65)
             .translationalPIDFCoefficients(new PIDFCoefficients(
-                    0.35,
-                    0.01,
+                    2,
+                    0.1,
                     0.1,
                     0
             ))
             .translationalPIDFSwitch(6)
             .secondaryTranslationalPIDFCoefficients(new PIDFCoefficients(
-                    0.01,
+                    0.15,
                     0.0001,
-                    0.05,
+                    0.02,
                     0
             ))
             .headingPIDFCoefficients(new PIDFCoefficients(
-                    1,
-                    0.008,
-                    0.05,
+                    1.5,
+                    0.003,
+                    0.07,
                     0
             ))
             .headingPIDFSwitch(Math.toRadians(10))
             .secondaryHeadingPIDFCoefficients(new PIDFCoefficients(
-                    1.25,
-                    0.01,
-                    0.0025,
+                    2,
+                    0.0,
+                    0.15,
                     0
             ))
             .drivePIDFCoefficients(new FilteredPIDFCoefficients(
-                    0.35,
-                    0.005,
-                    0.05,
+                    0.4,
+                    0.0001,
+                    0.001,
                     0.6,
                     0
             ))
             .secondaryDrivePIDFCoefficients(new FilteredPIDFCoefficients(
-                    0.03,
-                    0,
+                    0.1,
+                    0.0001,
                     0.0001,
                     0.6,
                     0
@@ -70,8 +70,9 @@ public class Constants {
             .leftRearMotorDirection(DcMotorSimple.Direction.REVERSE)
             .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
             .rightRearMotorDirection(DcMotorSimple.Direction.FORWARD)
-            .xVelocity(75.9)
-            .yVelocity(52.74);
+            .useBrakeModeInTeleOp(true)
+            .xVelocity(70)
+            .yVelocity(50);
 
     public static PinpointConstants localizerConstants = new PinpointConstants()
             .forwardPodY(3)
@@ -88,7 +89,7 @@ public class Constants {
             50,
             1.1,
             10,
-            0.9
+            8
     );
 
     //Add custom localizers or drivetrains here

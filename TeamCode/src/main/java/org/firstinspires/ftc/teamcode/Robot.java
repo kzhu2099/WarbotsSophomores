@@ -1,10 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
-import com.pedropathing.control.FilteredPIDFCoefficients;
-import com.pedropathing.control.PIDFCoefficients;
 import com.pedropathing.geometry.BezierCurve;
-import com.pedropathing.geometry.BezierPoint;
-import com.pedropathing.paths.PathConstraints;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -32,15 +28,24 @@ public class Robot {
     private final CRServo backServo;
     private final Servo gateServo;
 
-    private static final double gateOffPosition = 0.2;
-    private static final double gateOnPosition = 0.025;
+    private static final double gateOffPosition = 0.215;
+    private static final double gateOnPosition = 0.015;
 
     private static final double SENSITIVITY = 0.1;
     private static final double SERVOPOWER = 1;
-    private static final double INTAKEPOWER = 0.77;
-    private static final double SLOWINTAKEPOWER = 0.67;
-    private static final double FRONTOUTTAKERPM = 3500;
-    private static final double BACKOUTTAKERPM = 3500;
+
+    private static final double INTAKEPOWER = 0.85;
+
+    //------IMPORTANT SHOOTING VARIABLES------\\
+    private static final double SLOWINTAKEPOWER = 0.75;
+    private static final double FRONTOUTTAKERPM = 3360;
+    private static final double BACKOUTTAKERPM = 3480;
+    private static final int shootingTimeOnA = 250; // intake on
+    private static final int shootingTimeOffA = 50; // intake off
+    private static final int shootingTimeOnB = 500; // also the best
+    private static final int shootingTimeOffB = 100; // also pretty good though could be shorter
+
+
     // private static final double EMERGENCYOUTTAKERPM = 5500;
     private static final double OUTTAKECPR = 28;
     private static final double frontOuttakeAngularRate = toAngularRate(FRONTOUTTAKERPM, OUTTAKECPR);
@@ -61,15 +66,9 @@ public class Robot {
     private autoCycles[] autoCycleList;
 
     private static final int baseDeltaY = 0; // should be zero unless bad
-    private static final int shootingTimeOnA = 120; // the best
-    private static final int shootingTimeOnB = 250; // also the best
-    private static final int shootingTimeOff = 400; // also pretty good though could be shorter
-
-    // TODO: Fix the shooting so it is more accurate and not burst
-    // TODO: instead of one shooting time, do two different variables
-    private static final int autoCycleAimTime = 500;
+    private static final int autoCycleAimTime = 1000;
     private static final int triggerTime = 500;
-    private static final int intakeWaitTime = 800;
+    private static final int intakeWaitTime = 500;
     private static int triggerCycleNumber = -1;
 
     private int cycleNumber = 0;
@@ -168,10 +167,6 @@ public class Robot {
             }
         }
 
-        if (gamepad2.yWasPressed()) {
-            teleOpShootState = 1;
-        }
-
         boolean intakeOn = false;
         boolean gateServoOn = false;
 
@@ -181,6 +176,10 @@ public class Robot {
         setOuttake(outtakeOn, backShoot);
 
         boolean outtakeUpToSpeed = checkUpToSpeed(outtakeLeftMotor, backShoot) && checkUpToSpeed(outtakeRightMotor, backShoot);
+
+        if (teleOpShootState == 0 && gamepad2.y && outtakeUpToSpeed) {
+            teleOpShootState = 1;
+        }
 
         if (teleOpShootState == 0) {
             intakeOn = gamepad2.left_trigger > SENSITIVITY;
@@ -194,18 +193,13 @@ public class Robot {
             }
             else if (outtakeUpToSpeed) {
                 teleOpShootState = 2;
-                setIntakeSlow(true);
-                setGateServo(true);
                 Thread thread = new Thread(() -> {
                     while (teleOpShootState == 2) {
                         try {
-                            Thread.sleep(shootingTimeOnA);
-                            setIntakeSlow(false);
-                            Thread.sleep(shootingTimeOnB);
-                            setGateServo(false);
-                            Thread.sleep(shootingTimeOff);
-                            setGateServo(true);
-                            setIntakeSlow(true);
+                            setGateServo(true); Thread.sleep(shootingTimeOnB);
+                            setGateServo(false); Thread.sleep(shootingTimeOffB);
+                            setIntakeSlow(true); Thread.sleep(shootingTimeOnA);
+                            setIntakeSlow(false); Thread.sleep(shootingTimeOffA);
                         } catch (Exception e) {
                             SLEEPERRORS++;
                         }
@@ -309,9 +303,9 @@ public class Robot {
         PathChain path1 = follower.pathBuilder()
                 .addPath(new BezierCurve(start, control, control, end))
                 .setConstantHeadingInterpolation(end.getHeading())
-                .setBrakingStart(0.8) // TODO: Make this more accurate, either by increasing or decreasing
-                //.setBrakingStrength(0.8)
-                .setGlobalDeceleration(0.6)
+                //.setBrakingStart(2) // TODO: Make this more accurate, either by increasing or decreasing
+                //.setBrakingStrength(0.1)
+                //.setGlobalDeceleration(0.6)
                 //.setTranslationalConstraint(1)
                 //.setVelocityConstraint(5)
                 .build();
@@ -319,9 +313,11 @@ public class Robot {
         PathChain path2 = follower.pathBuilder()
                 .addPath(new BezierCurve(end, control, start))
                 .setConstantHeadingInterpolation(start.getHeading())
-                .setBrakingStart(0.5) // TODO: Make this more accurate, either by increasing or decreasing
+                //.setBrakingStart(0.5) // TODO: Make this more accurate, either by increasing or decreasing
                 //.setBrakingStrength(0.5)
-                .setGlobalDeceleration(0.4)
+                //.setGlobalDeceleration(0.4)
+                .setTranslationalConstraint(2)
+                .setHeadingConstraint(Math.toRadians(10))
                 .build();
 
         return new PathChain[] {path1, path2};
@@ -331,21 +327,37 @@ public class Robot {
         setOuttake(true, backShoot);
 
         if (checkUpToSpeed(outtakeLeftMotor, backShoot) && checkUpToSpeed(outtakeRightMotor, backShoot) && !follower.isBusy()) {
-            autoCycleState = -1;
+            autoCycleState = -2;
 
             Thread thread = new Thread(() -> {
-                setGateServo(true);
-                setIntakeSlow(true);
+                PathChain autoAimPath = getAutoAimPath();
+                follower.breakFollowing();
+                turnMode();
+                follower.followPath(autoAimPath);
 
                 try {
-                    for (int i = 0; i < 4; i++) {
-                        Thread.sleep(shootingTimeOnA);
-                        setIntakeSlow(false);
-                        Thread.sleep(shootingTimeOnB);
-                        setGateServo(false);
-                        Thread.sleep(shootingTimeOff);
-                        setGateServo(true);
-                        setIntakeSlow(true);
+                    Thread.sleep(autoCycleAimTime);
+                } catch (Exception e) {
+                    SLEEPERRORS++;
+                }
+
+                follower.breakFollowing();
+                regularMode();
+
+                autoCycleState = -3;
+
+                try {
+                    for (int i = 0; i < 3; i++) {
+                        try {
+                            setGateServo(true); Thread.sleep(shootingTimeOnB);
+                            setGateServo(false); Thread.sleep(shootingTimeOffB);
+                            if (i < 2) {
+                                setIntakeSlow(true); Thread.sleep(shootingTimeOnA);
+                                setIntakeSlow(false); Thread.sleep(shootingTimeOffA);
+                            }
+                        } catch (Exception e) {
+                            SLEEPERRORS++;
+                        }
                     }
                 } catch (Exception e) {
                     SLEEPERRORS++;
@@ -379,7 +391,7 @@ public class Robot {
             currentCycle = autoCycles.NONE;
         }
 
-        if ((!follower.isBusy() || autoCycleState == 0) && autoCycleState != -1) { // won't change if it is busy, the == 0 shouldn't happen
+        if ((!follower.isBusy() || autoCycleState == 0) && autoCycleState >= 0) { // won't change if it is busy, the == 0 shouldn't happen
             PathChain[] paths;
             switch (currentCycle) {
                 case NONE:
@@ -479,8 +491,13 @@ public class Robot {
                     autoCycle(P.BL_End, null, false, true);
                     break;
 
+                case FL_INIT:
+                    autoCycle(P.FL_Preload, null, false, false);
+                    setOuttake(true, false);
+                    break;
+
                 case FL_PRELOAD:
-                    autoCycle(P.FL_Preload, null, true, false);
+                    autoShoot(0, false, true);
                     break;
 
                 case FL_I:
@@ -498,21 +515,22 @@ public class Robot {
                     autoCycle(paths[0], paths[1], true, false);
                     break;
 
+                case FL_I_PICKUP:
+                    paths = buildAutoCyclePaths(P.FL_ScoringPose, new Pose(72 - P.cycleEndDX, P.rowI, Math.toRadians(180)), false);
+                    autoCycle(paths[0], null, true, false);
+                    break;
+
                 case FL_TRIGGER:
-                    paths = buildAutoCyclePaths(P.FL_ScoringPose, P.L_TriggerPose, false);
+                    paths = buildAutoCyclePaths(P.FL_ScoringPose, P.L_TriggerPose, true);
                     autoCycle(paths[0], paths[1], false, false);
                     break;
 
                 case FL_END:
-                    autoCycle(P.FL_End, null, false, false);
+                    autoCycle(P.BL_End, null, false, false);
                     break;
 
                 case DELAY_1:
-                    if (autoCycleState == -1) {
-                        assert true;
-                    }
-
-                    else if (autoCycleState == 0) {
+                    if (autoCycleState == 0) {
                         autoCycleState = -1;
                         Thread thread = new Thread(() -> {
                             try {
@@ -548,12 +566,9 @@ public class Robot {
 
     public void autoCycle (PathChain go, PathChain back, boolean useBalls, boolean backShoot) {
         switch (autoCycleState) {
-            case -1:
-                break;
-
             case 0:
                 if (go != null) {
-                    follower.followPath(go);
+                    follower.followPath(go, 0.75, true);
 
                     if (useBalls) {
                         setGateServo(false);
@@ -577,67 +592,25 @@ public class Robot {
 
             case 1:
                 if (!follower.isBusy()) {
-                    Thread thread = new Thread(() -> {
-                        autoCycleState = -1;
+                    if (useBalls) {
+                        setOuttake(true, backShoot);
+                        setIntake(false);
+                    }
 
-                        if (useBalls) {
-                            setOuttake(true, backShoot);
-                            try {
-                                Thread.sleep(intakeWaitTime) ;
-                                setIntake(false);
-                            } catch (Exception e) {
-                                SLEEPERRORS++;
-                            }
-                        }
+                    if (back != null) {
+                        follower.followPath(back, 0.75, true);
+                        autoCycleState = 2;
+                    }
 
-                        if (back != null) {
-                            follower.followPath(back);
-                            autoCycleState = 2;
-                        }
-
-                        else {
-                            setOuttake(false, false);
-                            autoCycleState = 1000;
-                        }
-                    });
-
-                    thread.start();
+                    else {
+                        setOuttake(false, false);
+                        autoCycleState = 1000;
+                    }
                 }
 
                 break;
 
             case 2:
-                if (!follower.isBusy()) {
-                    if (!useBalls) {
-                        autoCycleState = 3;
-                    }
-
-                    else {
-                        autoCycleState = -1;
-
-                        Thread thread = new Thread(() -> {
-                            try {
-                                PathChain autoAimPath = getAutoAimPath();
-                                follower.breakFollowing();
-                                turnMode();
-                                follower.followPath(autoAimPath);
-                                Thread.sleep(autoCycleAimTime);
-                                follower.breakFollowing();
-                                regularMode();
-                            } catch (Exception e) {
-                                SLEEPERRORS++;
-                            }
-
-                            autoCycleState = 3;
-                        });
-
-                        thread.start();
-                    }
-                }
-
-                break;
-
-            case 3:
                 if (!useBalls) {
                     autoCycleState = 1000;
                 }

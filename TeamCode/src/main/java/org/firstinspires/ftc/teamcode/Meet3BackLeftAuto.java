@@ -33,7 +33,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
 @Autonomous(name="Meet 3: BL Auto", group="Robot")
-public class Meet2BackLeftAuto extends OpMode {
+public class Meet3BackLeftAuto extends OpMode {
 
     private Robot robot;
 
@@ -49,9 +49,9 @@ public class Meet2BackLeftAuto extends OpMode {
         robot.setAutoCycleList(
             new autoCycles[] {
                 autoCycles.BL_INIT,
-                // autoCycles.BL_PRELOAD, // 0
-                // autoCycles.BL_I,
-                // autoCycles.BL_II, // so i can push the trigger after i pick up these balls
+                autoCycles.BL_PRELOAD, // 0
+                autoCycles.BL_I,
+                autoCycles.BL_II, // so i can push the trigger after i pick up these balls
                 autoCycles.BL_III_PICKUP,
                 // autoCycles.BL_END,
             }

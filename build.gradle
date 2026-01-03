@@ -8,6 +8,7 @@ buildscript {
     repositories {
         mavenCentral()
         google()
+        maven { url 'https://jitpack.io'}
     }
     dependencies {
         // Note for FTC Teams: Do not modify this yourself.
@@ -23,7 +24,7 @@ allprojects {
         google()
 
         // ADD THIS LINE for Pedro Pathing
-        maven { url = "https://mymaven.bylazar.com/releases" }
+        maven { url 'https://jitpack.io'}
     }
 }
 

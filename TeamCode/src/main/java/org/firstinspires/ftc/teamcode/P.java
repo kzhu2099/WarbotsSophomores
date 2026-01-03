@@ -25,11 +25,11 @@ public class P {
     public static Pose R_ParkingPose;
     public static Pose L_ParkingPose;
 
-    public static final double scoringDX = 20;
-    public static final double cycleEndDX = 50;
+    public static final double scoringDX = 12;
+    public static final double cycleEndDX = 48 + 24 - 12 - Robot.HL;
     public static final double triggerPoseDX = 55;
-    public static final double backScoringY = 20;
-    public static final double frontScoringY = 72 + 15; // TODO: find this y
+    public static final double backScoringY = 22;
+    public static final double frontScoringY = 72 + 12; // TODO: find this y
 
     public static final double rowHP = 12;
     public static final double rowI = 36;
@@ -76,12 +76,16 @@ public class P {
         double backAngle = Math.atan((144 - backScoringY) / (144 - (72 + scoringDX))) + Math.toRadians(180);
         double frontAngle = Math.atan((144 - frontScoringY) / (14 - (72 + scoringDX))) + Math.toRadians(180);
 
+        // frontAngle = Math.toRadians(90);
+        // backAngle = Math.toRadians(270);
         BR_ScoringPose = new Pose (72 + scoringDX, backScoringY, backAngle);
         FR_ScoringPose = new Pose (72 + scoringDX, frontScoringY, frontAngle);
 
         backAngle = 0 - Math.atan((144 - backScoringY) / (72 - scoringDX));
         frontAngle = 0 - Math.atan((144 - frontScoringY) / (72 - scoringDX));
 
+        // frontAngle = Math.toRadians(90);
+        // backAngle = Math.toRadians(270);
         BL_ScoringPose = new Pose (72 - scoringDX, backScoringY, backAngle);
         FL_ScoringPose = new Pose (72 - scoringDX, frontScoringY, frontAngle);
 
@@ -100,7 +104,7 @@ public class P {
     public static void buildOtherAutoPaths (@NonNull Follower follower) {
         BR_Preload = follower.pathBuilder()
                 .addPath(new BezierLine(P.startingPose, P.BR_ScoringPose))
-                .setLinearHeadingInterpolation(P.startingPose.getHeading(), P.BR_ScoringPose.getHeading())
+                .setConstantHeadingInterpolation(P.BR_ScoringPose.getHeading())
                 .build();
 
         BR_End = follower.pathBuilder()
@@ -121,6 +125,9 @@ public class P {
         BL_Preload = follower.pathBuilder()
                 .addPath(new BezierLine(P.startingPose, P.BL_ScoringPose))
                 .setLinearHeadingInterpolation(P.startingPose.getHeading(), P.BL_ScoringPose.getHeading())
+                // .setTranslationalConstraint(2)
+                // .setHeadingConstraint(Math.toRadians(10))
+                .setTimeoutConstraint(0.7)
                 .build();
 
         BL_End = follower.pathBuilder()
