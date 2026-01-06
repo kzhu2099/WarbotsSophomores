@@ -75,6 +75,7 @@ public class Robot {
     private int teleOpDriveState = 0;
     private int autoCycleState = 0;
     private int teleOpShootState = 0;
+    private boolean robotCentric = false;
 
     private boolean autoAimed = false;
 
@@ -132,6 +133,10 @@ public class Robot {
             parkRobot();
         }
 
+        if (gamepad1.bWasPressed()) {
+            robotCentric = !robotCentric;
+        }
+
         if (teleOpDriveState == 0) {
             boolean slowMove = gamepad1.right_trigger > SENSITIVITY;
             double axial;
@@ -148,10 +153,12 @@ public class Robot {
                 yaw = -gamepad1.right_stick_x * 0.5;
             }
 
-            axial *= (redAlliance) ? 1 : -1;
-            lateral *= (redAlliance) ? 1 : -1;
-
-            follower.setTeleOpDrive(axial, lateral, yaw, false);
+            if (!robotCentric) {
+                axial *= (redAlliance) ? 1 : -1;
+                lateral *= (redAlliance) ? 1 : -1;
+            }
+            
+            follower.setTeleOpDrive(axial, lateral, yaw, robotCentric);
         } else if (teleOpDriveState == 1) {
             if (autoAimed) {
                 autoAimed = false;
@@ -238,12 +245,10 @@ public class Robot {
         if (redAlliance) {
             // NOTE: It seems to be aiming too low
             heading = Math.atan((144 - (y)) / (144 - (x))) + Math.PI; // middle of robot, turn to outtak
-            // TODO: why is it not going the full way each time?
         }
 
         else {
             heading = 0 - Math.atan((144 - (y)) / ((x))); // middle of robot, turn to outtake
-            // TODO: why is it not going the full way each time?
         }
 
         autoAimPath = follower.pathBuilder()
@@ -303,7 +308,7 @@ public class Robot {
         PathChain path1 = follower.pathBuilder()
                 .addPath(new BezierCurve(start, control, control, end))
                 .setConstantHeadingInterpolation(end.getHeading())
-                //.setBrakingStart(2) // TODO: Make this more accurate, either by increasing or decreasing
+                //.setBrakingStart(2)
                 //.setBrakingStrength(0.1)
                 //.setGlobalDeceleration(0.6)
                 //.setTranslationalConstraint(1)
@@ -313,7 +318,7 @@ public class Robot {
         PathChain path2 = follower.pathBuilder()
                 .addPath(new BezierCurve(end, control, start))
                 .setConstantHeadingInterpolation(start.getHeading())
-                //.setBrakingStart(0.5) // TODO: Make this more accurate, either by increasing or decreasing
+                //.setBrakingStart(0.5)
                 //.setBrakingStrength(0.5)
                 //.setGlobalDeceleration(0.4)
                 .setTranslationalConstraint(2)
@@ -397,23 +402,33 @@ public class Robot {
                 case NONE:
                     break;
 
+                case BR_INIT:
+                    autoCycle(P.BR_Preload, null, false, true);
+                    setOuttake(true, true);
+                    break;
+
                 case BR_PRELOAD:
-                    autoCycle(P.BR_Preload, null, true, true);
+                    autoShoot(0, true, true);
                     break;
 
                 case BR_I:
-                    paths = buildAutoCyclePaths(P.BR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowI, 0), true);
+                    paths = buildAutoCyclePaths(P.BR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowI, Math.toRadians(180)), true);
                     autoCycle(paths[0], paths[1], true, true);
                     break;
 
                 case BR_II:
-                    paths = buildAutoCyclePaths(P.BR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowII, 0), true);
+                    paths = buildAutoCyclePaths(P.BR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowII, Math.toRadians(180)), true);
                     autoCycle(paths[0], paths[1], true, true);
                     break;
 
                 case BR_III:
-                    paths = buildAutoCyclePaths(P.BR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowIII, 0), true);
+                    paths = buildAutoCyclePaths(P.BR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowIII, Math.toRadians(180)), true);
                     autoCycle(paths[0], paths[1], true, true);
+                    break;
+
+                case BR_III_PICKUP:
+                    paths = buildAutoCyclePaths(P.BR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowIII, Math.toRadians(180)), true);
+                    autoCycle(paths[0], null, true, true);
                     break;
 
                 case BR_TRIGGER:
@@ -425,32 +440,42 @@ public class Robot {
                     autoCycle(P.BR_End, null, false, true);
                     break;
 
+                case FR_INIT:
+                    autoCycle(P.FR_Preload, null, false, false);
+                    setOuttake(true, false);
+                    break;
+
                 case FR_PRELOAD:
-                    autoCycle(P.FR_Preload, null, true, false);
+                    autoShoot(0, false, true);
                     break;
 
                 case FR_I:
-                    paths = buildAutoCyclePaths(P.FR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowI, 0), false);
+                    paths = buildAutoCyclePaths(P.FR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowI, Math.toRadians(180)), false);
                     autoCycle(paths[0], paths[1], true, false);
                     break;
 
                 case FR_II:
-                    paths = buildAutoCyclePaths(P.FR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowII, 0), false);
+                    paths = buildAutoCyclePaths(P.FR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowII, Math.toRadians(180)), false);
                     autoCycle(paths[0], paths[1], true, false);
                     break;
 
                 case FR_III:
-                    paths = buildAutoCyclePaths(P.FR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowIII, 0), false);
+                    paths = buildAutoCyclePaths(P.FR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowIII, Math.toRadians(180)), false);
                     autoCycle(paths[0], paths[1], true, false);
                     break;
 
+                case FR_I_PICKUP:
+                    paths = buildAutoCyclePaths(P.FR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowI, Math.toRadians(180)), false);
+                    autoCycle(paths[0], null, true, false);
+                    break;
+
                 case FR_TRIGGER:
-                    paths = buildAutoCyclePaths(P.FR_ScoringPose, P.R_TriggerPose, false);
+                    paths = buildAutoCyclePaths(P.FR_ScoringPose, P.R_TriggerPose, true);
                     autoCycle(paths[0], paths[1], false, false);
                     break;
 
                 case FR_END:
-                    autoCycle(P.FR_End, null, false, false);
+                    autoCycle(P.BR_End, null, false, false);
                     break;
 
                 case BL_INIT:

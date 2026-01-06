@@ -97,8 +97,8 @@ public class P {
         R_TriggerPose = new Pose (72 + triggerPoseDX, rowTrigger, Math.toRadians(0));
         L_TriggerPose = new Pose (72 - triggerPoseDX, rowTrigger, Math.toRadians(180));
 
-        R_ParkingPose = new Pose (72 + 33, 33, Math.toRadians(90));
-        L_ParkingPose = new Pose (72 - 33, 33, Math.toRadians(90));
+        R_ParkingPose = new Pose (72 + 33, 33, Math.toRadians(270));
+        L_ParkingPose = new Pose (72 - 33, 33, Math.toRadians(270));
     }
 
     public static void buildOtherAutoPaths (@NonNull Follower follower) {

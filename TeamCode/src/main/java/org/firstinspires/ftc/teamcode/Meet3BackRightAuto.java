@@ -1,5 +1,4 @@
-/* Copyright (c) 2021 FIRST. All rights reserved.
- * TESTING TESTING
+/* Copyright (c) 2017 FIRST. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted (subject to the limitations in the disclaimer below) provided that
@@ -29,33 +28,42 @@
  */
 
 package org.firstinspires.ftc.teamcode;
-
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-@TeleOp(name="Meet 3: TeleOp", group="OpMode")
-// @Disabled
-public class Meet2TeleOp extends OpMode {
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+
+@Autonomous(name="Meet 2: BR Auto", group="Robot")
+public class Meet3BackRightAuto extends OpMode {
 
     private Robot robot;
 
-    public void loop() {
-        robot.teleOpLoop();
+    public void loop () {
+        robot.autoLoop();
         telemetry.update();
     }
 
     public void init () {
         robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2, true);
         robot.init();
+
+        robot.setAutoCycleList(
+            new autoCycles[] {
+                autoCycles.BR_INIT,
+                autoCycles.BR_PRELOAD, // 0
+                autoCycles.BR_I, // so i can push the trigger after i pick up these balls
+                autoCycles.BR_II,
+                autoCycles.BR_III_PICKUP,
+                // autoCycles.BR_END,
+            }
+        );
     }
 
     public void init_loop () {
-        robot.teleOpInitLoop();
-        // telemetry.addData("pose", "%4.2f, %4.2f", P.startingPose.getX(), P.startingPose.getY());
+        robot.autoInitLoop();
     }
 
     public void start () {
-        P.setStartingPose(Robot.allStartingPoses[Robot.startingSelection]); // only temporary
+        P.setStartingPose(startingPoses.BR);
         robot.start();
     }
 

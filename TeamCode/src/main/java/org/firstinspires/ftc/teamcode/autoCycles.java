@@ -3,15 +3,19 @@ package org.firstinspires.ftc.teamcode;
 public enum autoCycles {
     NONE,
 
+    BR_INIT,
     BR_PRELOAD,
     BR_I,
     BR_II,
     BR_III,
+    BR_III_PICKUP,
     BR_TRIGGER,
     BR_END,
 
+    FR_INIT,
     FR_PRELOAD,
     FR_I,
+    FR_I_PICKUP,
     FR_II,
     FR_III,
     FR_TRIGGER,
