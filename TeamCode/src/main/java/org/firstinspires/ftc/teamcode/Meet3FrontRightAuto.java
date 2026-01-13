@@ -32,7 +32,7 @@ package org.firstinspires.ftc.teamcode;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
-@Autonomous(name="Meet 2: FR Auto", group="Robot")
+@Autonomous(name="Meet 3: FR Auto", group="Robot")
 public class Meet3FrontRightAuto extends OpMode {
 
     private Robot robot;

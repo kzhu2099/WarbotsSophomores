@@ -18,46 +18,46 @@ public class Constants {
             .forwardZeroPowerAcceleration(-35)
             .lateralZeroPowerAcceleration(-65)
             .translationalPIDFCoefficients(new PIDFCoefficients(
-                    1,
-                    0.1,
+                    0.3,
+                    0,
                     0.1,
                     0
             ))
             .translationalPIDFSwitch(6)
             .secondaryTranslationalPIDFCoefficients(new PIDFCoefficients(
                     0.05,
-                    0.0001,
+                    0,
                     0.02,
                     0
             ))
             .headingPIDFCoefficients(new PIDFCoefficients(
-                    1.5,
-                    0.003,
+                    1,
+                    0,
                     0.07,
                     0
             ))
             .headingPIDFSwitch(Math.toRadians(10))
             .secondaryHeadingPIDFCoefficients(new PIDFCoefficients(
-                    1,
+                    0.5,
                     0.001,
                     0.175,
                     0
             ))
             .drivePIDFCoefficients(new FilteredPIDFCoefficients(
-                    0.4,
-                    0.0001,
+                    0.3,
+                    0,
                     0.001,
                     0.6,
                     0
             ))
             .secondaryDrivePIDFCoefficients(new FilteredPIDFCoefficients(
                     0.05,
-                    0.0001,
+                    0,
                     0.0001,
                     0.6,
                     0
             ))
-            .drivePIDFSwitch(6)
+            .drivePIDFSwitch(15)
             .centripetalScaling(0.00055);
 
     public static MecanumConstants driveConstants = new MecanumConstants()
@@ -87,7 +87,7 @@ public class Constants {
             0.25,
             Math.toRadians(0.5),
             50,
-            1.1,
+            1.05,
             10,
             8
     );

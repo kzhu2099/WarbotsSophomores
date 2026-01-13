@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.pedropathing.geometry.BezierCurve;
+import com.pedropathing.paths.callbacks.PathCallback;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -28,22 +29,22 @@ public class Robot {
     private final CRServo backServo;
     private final Servo gateServo;
 
-    private static final double gateOffPosition = 0.215;
+    private static final double gateOffPosition = 0.225;
     private static final double gateOnPosition = 0.015;
 
     private static final double SENSITIVITY = 0.1;
     private static final double SERVOPOWER = 1;
 
-    private static final double INTAKEPOWER = 0.85;
+    private static final double INTAKEPOWER = 0.8;
 
     //------IMPORTANT SHOOTING VARIABLES------\\
-    private static final double SLOWINTAKEPOWER = 0.75;
-    private static final double FRONTOUTTAKERPM = 3360;
-    private static final double BACKOUTTAKERPM = 3480;
-    private static final int shootingTimeOnA = 250; // intake on
+    private static final double SHOOTINTAKEPOWER = 0.85;
+    private static final double FRONTOUTTAKERPM = 3400;
+    private static final double BACKOUTTAKERPM = 3540;
+    private static final int shootingTimeOnA = 350; // intake on
     private static final int shootingTimeOffA = 50; // intake off
-    private static final int shootingTimeOnB = 500; // also the best
-    private static final int shootingTimeOffB = 100; // also pretty good though could be shorter
+    private static final int shootingTimeOnB = 600; // also the best
+    private static final int shootingTimeOffB = 0; // also pretty good though could be shorter
 
 
     // private static final double EMERGENCYOUTTAKERPM = 5500;
@@ -66,9 +67,10 @@ public class Robot {
     private autoCycles[] autoCycleList;
 
     private static final int baseDeltaY = 0; // should be zero unless bad
-    private static final int autoCycleAimTime = 1000;
+    private static final int autoCycleAimTime = 500;
+    private static final int autoCycleAimAmount = 2;
+    private static final double autoCycleSpeed = 0.8;
     private static final int triggerTime = 500;
-    private static final int intakeWaitTime = 500;
     private static int triggerCycleNumber = -1;
 
     private int cycleNumber = 0;
@@ -229,7 +231,8 @@ public class Robot {
         telemetry.addData("driving status", teleOpDriveState);
         telemetry.addData("shooting status", teleOpShootState);
         telemetry.addData("follower is busy", follower.isBusy());
-
+        telemetry.addData("motor speed L/R", "%4.2f, %4.2f", outtakeLeftMotor.getVelocity(), outtakeRightMotor.getVelocity());
+        telemetry.addData("robot centric", "%b", robotCentric);
         allTelemetry();
     }
 
@@ -306,7 +309,7 @@ public class Robot {
         Pose control = new Pose(start.getX(), end.getY() + deltaY, end.getHeading());
         end = new Pose(end.getX(), end.getY() + deltaY, end.getHeading());
         PathChain path1 = follower.pathBuilder()
-                .addPath(new BezierCurve(start, control, control, end))
+                .addPath(new BezierCurve(start, control, control, control, end))
                 .setConstantHeadingInterpolation(end.getHeading())
                 //.setBrakingStart(2)
                 //.setBrakingStrength(0.1)
@@ -321,7 +324,10 @@ public class Robot {
                 //.setBrakingStart(0.5)
                 //.setBrakingStrength(0.5)
                 //.setGlobalDeceleration(0.4)
-                .setTranslationalConstraint(2)
+                //.setTranslationalConstraint(2)
+                /*.addParametricCallback(0.99, () -> {
+                    follower.breakFollowing();
+                })*/
                 .setHeadingConstraint(Math.toRadians(10))
                 .build();
 
@@ -335,19 +341,21 @@ public class Robot {
             autoCycleState = -2;
 
             Thread thread = new Thread(() -> {
-                PathChain autoAimPath = getAutoAimPath();
-                follower.breakFollowing();
-                turnMode();
-                follower.followPath(autoAimPath);
+                for (int i = 0; i < autoCycleAimAmount; i++) {
+                    PathChain autoAimPath = getAutoAimPath();
+                    follower.breakFollowing();
+                    turnMode();
+                    follower.followPath(autoAimPath);
 
-                try {
-                    Thread.sleep(autoCycleAimTime);
-                } catch (Exception e) {
-                    SLEEPERRORS++;
+                    try {
+                        Thread.sleep(autoCycleAimTime);
+                    } catch (Exception e) {
+                        SLEEPERRORS++;
+                    }
+
+                    follower.breakFollowing();
+                    regularMode();
                 }
-
-                follower.breakFollowing();
-                regularMode();
 
                 autoCycleState = -3;
 
@@ -412,22 +420,22 @@ public class Robot {
                     break;
 
                 case BR_I:
-                    paths = buildAutoCyclePaths(P.BR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowI, Math.toRadians(180)), true);
+                    paths = buildAutoCyclePaths(P.BR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowI, Math.toRadians(0)), true);
                     autoCycle(paths[0], paths[1], true, true);
                     break;
 
                 case BR_II:
-                    paths = buildAutoCyclePaths(P.BR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowII, Math.toRadians(180)), true);
+                    paths = buildAutoCyclePaths(P.BR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowII, Math.toRadians(0)), true);
                     autoCycle(paths[0], paths[1], true, true);
                     break;
 
                 case BR_III:
-                    paths = buildAutoCyclePaths(P.BR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowIII, Math.toRadians(180)), true);
+                    paths = buildAutoCyclePaths(P.BR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowIII, Math.toRadians(0)), true);
                     autoCycle(paths[0], paths[1], true, true);
                     break;
 
                 case BR_III_PICKUP:
-                    paths = buildAutoCyclePaths(P.BR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowIII, Math.toRadians(180)), true);
+                    paths = buildAutoCyclePaths(P.BR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowIII, Math.toRadians(0)), true);
                     autoCycle(paths[0], null, true, true);
                     break;
 
@@ -450,22 +458,22 @@ public class Robot {
                     break;
 
                 case FR_I:
-                    paths = buildAutoCyclePaths(P.FR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowI, Math.toRadians(180)), false);
+                    paths = buildAutoCyclePaths(P.FR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowI, Math.toRadians(0)), false);
                     autoCycle(paths[0], paths[1], true, false);
                     break;
 
                 case FR_II:
-                    paths = buildAutoCyclePaths(P.FR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowII, Math.toRadians(180)), false);
+                    paths = buildAutoCyclePaths(P.FR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowII, Math.toRadians(0)), false);
                     autoCycle(paths[0], paths[1], true, false);
                     break;
 
                 case FR_III:
-                    paths = buildAutoCyclePaths(P.FR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowIII, Math.toRadians(180)), false);
+                    paths = buildAutoCyclePaths(P.FR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowIII, Math.toRadians(0)), false);
                     autoCycle(paths[0], paths[1], true, false);
                     break;
 
                 case FR_I_PICKUP:
-                    paths = buildAutoCyclePaths(P.FR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowI, Math.toRadians(180)), false);
+                    paths = buildAutoCyclePaths(P.FR_ScoringPose, new Pose(72 + P.cycleEndDX, P.rowI, Math.toRadians(0)), false);
                     autoCycle(paths[0], null, true, false);
                     break;
 
@@ -593,7 +601,7 @@ public class Robot {
         switch (autoCycleState) {
             case 0:
                 if (go != null) {
-                    follower.followPath(go, 0.75, true);
+                    follower.followPath(go, autoCycleSpeed, true);
 
                     if (useBalls) {
                         setGateServo(false);
@@ -623,7 +631,7 @@ public class Robot {
                     }
 
                     if (back != null) {
-                        follower.followPath(back, 0.75, true);
+                        follower.followPath(back, autoCycleSpeed, true);
                         autoCycleState = 2;
                     }
 
@@ -650,10 +658,11 @@ public class Robot {
                 if (!follower.isBusy()) {
                     Pose currentPose = follower.getPose();
                     Pose triggerPose = (redAlliance) ? P.R_TriggerPose : P.L_TriggerPose;
-
+                    double xdx = ((redAlliance) ? -1 : 1) * 3;
+                    Pose controlPose = new Pose(currentPose.getX() + xdx, (triggerPose.getY() + currentPose.getY()) / 2, triggerPose.getHeading());
                     PathChain goTrigger = follower.pathBuilder()
-                            .addPath(new BezierLine(currentPose, triggerPose))
-                            .setLinearHeadingInterpolation(currentPose.getHeading(), triggerPose.getHeading())
+                            .addPath(new BezierCurve(currentPose, controlPose, triggerPose))
+                            .setConstantHeadingInterpolation(triggerPose.getHeading())
                             .build();
 
                     follower.followPath(goTrigger);
@@ -781,7 +790,7 @@ public class Robot {
     }
 
     public void setIntakeSlow (boolean status) {
-        intakeMotor.setPower(status ? SLOWINTAKEPOWER : 0);
+        intakeMotor.setPower(status ? SHOOTINTAKEPOWER : 0);
     }
 
     public void setOuttake (boolean status, boolean backShoot) {

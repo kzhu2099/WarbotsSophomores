@@ -28,14 +28,14 @@ public class P {
     public static final double scoringDX = 12;
     public static final double cycleEndDX = 48 + 24 - 12 - Robot.HL;
     public static final double triggerPoseDX = 55;
-    public static final double backScoringY = 22;
+    public static final double backScoringY = 18;
     public static final double frontScoringY = 72 + 12; // TODO: find this y
 
     public static final double rowHP = 12;
     public static final double rowI = 36;
     public static final double rowII = 60;
     public static final double rowIII = 84;
-    public static final double rowTrigger = 72 - 3.5;
+    public static final double rowTrigger = 72;
 
     public static PathChain BR_Preload;
     public static PathChain BR_End;
@@ -89,10 +89,10 @@ public class P {
         BL_ScoringPose = new Pose (72 - scoringDX, backScoringY, backAngle);
         FL_ScoringPose = new Pose (72 - scoringDX, frontScoringY, frontAngle);
 
-        BR_EndingPose = new Pose (72 + 40, 40, Math.toRadians(270));
-        BL_EndingPose = new Pose (72 - 40, 40, Math.toRadians(270));
-        FR_EndingPose = new Pose (72 + 40, 144 - 60, Math.toRadians(60));
-        FL_EndingPose = new Pose (72 - 40, 144 - 60, Math.toRadians(180 - 60));
+        BR_EndingPose = new Pose (72 + 36, 12, Math.toRadians(270));
+        BL_EndingPose = new Pose (72 - 36, 12, Math.toRadians(270));
+        FR_EndingPose = new Pose (72 + 12, 144 - 12, Math.toRadians(60));
+        FL_EndingPose = new Pose (72 - 12, 144 - 12, Math.toRadians(180 - 60));
 
         R_TriggerPose = new Pose (72 + triggerPoseDX, rowTrigger, Math.toRadians(0));
         L_TriggerPose = new Pose (72 - triggerPoseDX, rowTrigger, Math.toRadians(180));
@@ -127,7 +127,7 @@ public class P {
                 .setLinearHeadingInterpolation(P.startingPose.getHeading(), P.BL_ScoringPose.getHeading())
                 // .setTranslationalConstraint(2)
                 // .setHeadingConstraint(Math.toRadians(10))
-                .setTimeoutConstraint(0.7)
+                // .setTimeoutConstraint(0.7)
                 .build();
 
         BL_End = follower.pathBuilder()
