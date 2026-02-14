@@ -1,4 +1,5 @@
-/* Copyright (c) 2017 FIRST. All rights reserved.
+/* Copyright (c) 2021 FIRST. All rights reserved.
+ * TESTING TESTING
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted (subject to the limitations in the disclaimer below) provided that
@@ -27,43 +28,37 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.OldOpModes;
+
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import org.firstinspires.ftc.teamcode.OldRobot;
+import org.firstinspires.ftc.teamcode.P;
 
-@Autonomous(name="Meet 3: BR Auto", group="Robot")
-public class Meet3BackRightAuto extends OpMode {
+@TeleOp(name="Meet 3: TeleOp", group="OpMode")
+// @Disabled
+public class Meet3TeleOp extends OpMode {
 
-    private Robot robot;
+    private OldRobot robot;
 
-    public void loop () {
-        robot.autoLoop();
+    public void loop() {
+        robot.teleOpLoop();
         telemetry.update();
     }
 
     public void init () {
-        robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2, true);
+        robot = new OldRobot(hardwareMap, telemetry, gamepad1, gamepad2, true);
         robot.init();
-
-        robot.setAutoCycleList(
-            new autoCycles[] {
-                autoCycles.BR_INIT,
-                autoCycles.BR_PRELOAD, // 0
-                autoCycles.BR_I, // so i can push the trigger after i pick up these balls
-                autoCycles.BR_II,
-                autoCycles.BR_III_PICKUP,
-                // autoCycles.BR_END,
-            }
-        );
     }
 
     public void init_loop () {
-        robot.autoInitLoop();
+        robot.teleOpInitLoop();
+        // telemetry.addData("pose", "%4.2f, %4.2f", P.startingPose.getX(), P.startingPose.getY());
     }
 
     public void start () {
-        P.setStartingPose(startingPoses.BR);
+        P.setStartingPose(OldRobot.allStartingPoses[OldRobot.startingSelection]); // only temporary
         robot.start();
     }
 

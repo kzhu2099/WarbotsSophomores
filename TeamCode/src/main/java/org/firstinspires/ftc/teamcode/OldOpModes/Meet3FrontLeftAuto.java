@@ -27,15 +27,20 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.OldOpModes;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
+import org.firstinspires.ftc.teamcode.OldRobot;
+import org.firstinspires.ftc.teamcode.P;
+import org.firstinspires.ftc.teamcode.autoCycles;
+import org.firstinspires.ftc.teamcode.startingPoses;
+
 @Autonomous(name="Meet 3: FL Auto", group="Robot")
 public class Meet3FrontLeftAuto extends OpMode {
 
-    private Robot robot;
+    private OldRobot robot;
 
     public void loop () {
         robot.autoLoop();
@@ -43,7 +48,7 @@ public class Meet3FrontLeftAuto extends OpMode {
     }
 
     public void init () {
-        robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2, false);
+        robot = new OldRobot(hardwareMap, telemetry, gamepad1, gamepad2, false);
         robot.init();
 
         robot.setAutoCycleList(

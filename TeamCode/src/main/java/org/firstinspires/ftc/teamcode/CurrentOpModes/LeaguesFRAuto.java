@@ -1,5 +1,4 @@
-/* Copyright (c) 2021 FIRST. All rights reserved.
- * TESTING TESTING
+/* Copyright (c) 2017 FIRST. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without modification,
  * are permitted (subject to the limitations in the disclaimer below) provided that
@@ -28,34 +27,50 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.CurrentOpModes;
 
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
-@TeleOp(name="Meet 3: TeleOp", group="OpMode")
-// @Disabled
-public class Meet3TeleOp extends OpMode {
+import org.firstinspires.ftc.teamcode.P;
+import org.firstinspires.ftc.teamcode.Robot;
+import org.firstinspires.ftc.teamcode.autoCycles;
+import org.firstinspires.ftc.teamcode.startingPoses;
+
+@Autonomous(name="Leagues: FR Auto", group="Robot")
+public class LeaguesFRAuto extends OpMode {
 
     private Robot robot;
 
-    public void loop() {
-        robot.teleOpLoop();
+    public void loop () {
+        robot.autoLoop();
         telemetry.update();
     }
 
     public void init () {
         robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2, true);
         robot.init();
+
+        robot.setTriggerCycles(new int[] {-1});
+
+        robot.setAutoCycleList(
+            new autoCycles[] {
+                autoCycles.FR_INIT,
+                autoCycles.FR_PRELOAD, // 0
+                autoCycles.FR_III, // so i can push the trigger after i pick up these balls
+                autoCycles.FR_II,
+                autoCycles.FR_I_PICKUP,
+                // autoCycles.BL_END,
+            }
+        );
     }
 
     public void init_loop () {
-        robot.teleOpInitLoop();
-        // telemetry.addData("pose", "%4.2f, %4.2f", P.startingPose.getX(), P.startingPose.getY());
+        robot.autoInitLoop();
     }
 
     public void start () {
-        P.setStartingPose(Robot.allStartingPoses[Robot.startingSelection]); // only temporary
+        P.setStartingPose(startingPoses.FR);
         robot.start();
     }
 

@@ -26,7 +26,7 @@ public class P {
     public static Pose L_ParkingPose;
 
     public static final double scoringDX = 12;
-    public static final double cycleEndDX = 48 + 24 - 12 - Robot.HL;
+    public static final double cycleEndDX = 48 + 24 - 12 - OldRobot.HL;
     public static final double triggerPoseDX = 55;
     public static final double backScoringY = 18;
     public static final double frontScoringY = 72 + 12; // TODO: find this y
@@ -55,19 +55,19 @@ public class P {
                 break;
 
             case BR:
-                startingPose = new Pose (72 + 24, Robot.HL, Math.toRadians(270));
+                startingPose = new Pose (72 + 24, OldRobot.HL, Math.toRadians(270));
                 break;
 
             case BL:
-                startingPose = new Pose (72 - 24, Robot.HL, Math.toRadians(270));
+                startingPose = new Pose (72 - 24, OldRobot.HL, Math.toRadians(270));
                 break;
 
             case FR:
-                startingPose = new Pose (72 + 48 - Robot.HW, 144 - Robot.HL, Math.toRadians(90));
+                startingPose = new Pose (72 + 48 - OldRobot.HW, 144 - OldRobot.HL, Math.toRadians(90));
                 break;
 
             case FL:
-                startingPose = new Pose (72 - 48 + Robot.HW, 144 - Robot.HL, Math.toRadians(90));
+                startingPose = new Pose (72 - 48 + OldRobot.HW, 144 - OldRobot.HL, Math.toRadians(90));
                 break;
         }
     }

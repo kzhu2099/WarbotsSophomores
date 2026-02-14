@@ -27,13 +27,18 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.CurrentOpModes;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
-@Autonomous(name="Meet 3: Match 10 Auto", group="Robot")
-public class Meet3Match10Auto extends OpMode {
+import org.firstinspires.ftc.teamcode.P;
+import org.firstinspires.ftc.teamcode.Robot;
+import org.firstinspires.ftc.teamcode.autoCycles;
+import org.firstinspires.ftc.teamcode.startingPoses;
+
+@Autonomous(name="Leagues: BL Auto", group="Robot")
+public class LeaguesBLAuto extends OpMode {
 
     private Robot robot;
 
@@ -43,17 +48,19 @@ public class Meet3Match10Auto extends OpMode {
     }
 
     public void init () {
-        robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2, false);
+        robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2, true);
         robot.init();
+
+        robot.setTriggerCycles(new int[] {-1});
 
         robot.setAutoCycleList(
             new autoCycles[] {
                 autoCycles.BL_INIT,
                 autoCycles.BL_PRELOAD, // 0
-                autoCycles.BL_I,
-                // autoCycles.BL_II, // so i can push the trigger after i pick up these balls
-                // autoCycles.BL_III_PICKUP,
-                autoCycles.BL_END,
+                autoCycles.BL_I, // so i can push the trigger after i pick up these balls
+                autoCycles.BL_II,
+                autoCycles.BL_III_PICKUP,
+                // autoCycles.BL_END,
             }
         );
     }

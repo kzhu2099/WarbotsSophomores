@@ -27,15 +27,20 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode;
+package org.firstinspires.ftc.teamcode.OldOpModes;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
-@Autonomous(name="Meet 3: Match 5 Auto", group="Robot")
-public class Meet3Match5Auto extends OpMode {
+import org.firstinspires.ftc.teamcode.OldRobot;
+import org.firstinspires.ftc.teamcode.P;
+import org.firstinspires.ftc.teamcode.autoCycles;
+import org.firstinspires.ftc.teamcode.startingPoses;
 
-    private Robot robot;
+@Autonomous(name="Meet 2: Good Partner Auto", group="Robot")
+public class GoodPartnerAuto extends OpMode {
+
+    private OldRobot robot;
 
     public void loop () {
         robot.autoLoop();
@@ -43,17 +48,14 @@ public class Meet3Match5Auto extends OpMode {
     }
 
     public void init () {
-        robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2, false);
+        robot = new OldRobot(hardwareMap, telemetry, gamepad1, gamepad2, false);
         robot.init();
 
         robot.setAutoCycleList(
             new autoCycles[] {
-                autoCycles.BL_INIT,
-                autoCycles.BL_PRELOAD, // 0
-                autoCycles.BL_I,
-                // autoCycles.BL_II, // so i can push the trigger after i pick up these balls
-                // autoCycles.BL_III_PICKUP,
-                autoCycles.BL_END,
+                autoCycles.BR_PRELOAD, // 0
+                autoCycles.BR_I,
+                autoCycles.BR_END,
             }
         );
     }
@@ -63,11 +65,7 @@ public class Meet3Match5Auto extends OpMode {
     }
 
     public void start () {
-        P.setStartingPose(startingPoses.BL);
+        P.setStartingPose(startingPoses.BR);
         robot.start();
-    }
-
-    public void stop () {
-        robot.stop();
     }
 }

@@ -27,15 +27,20 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-package org.firstinspires.ftc.teamcode;
-
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+package org.firstinspires.ftc.teamcode.OldOpModes;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
-@Autonomous(name="Meet 3: Match 7 Auto", group="Robot")
-public class Meet3Match7Auto extends OpMode {
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 
-    private Robot robot;
+import org.firstinspires.ftc.teamcode.OldRobot;
+import org.firstinspires.ftc.teamcode.P;
+import org.firstinspires.ftc.teamcode.autoCycles;
+import org.firstinspires.ftc.teamcode.startingPoses;
+
+@Autonomous(name="Meet 3: BR Auto", group="Robot")
+public class Meet3BackRightAuto extends OpMode {
+
+    private OldRobot robot;
 
     public void loop () {
         robot.autoLoop();
@@ -43,17 +48,17 @@ public class Meet3Match7Auto extends OpMode {
     }
 
     public void init () {
-        robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2, true);
+        robot = new OldRobot(hardwareMap, telemetry, gamepad1, gamepad2, true);
         robot.init();
 
         robot.setAutoCycleList(
             new autoCycles[] {
                 autoCycles.BR_INIT,
                 autoCycles.BR_PRELOAD, // 0
-                // autoCycles.BR_I, // so i can push the trigger after i pick up these balls
-                // autoCycles.BR_II,
-                // autoCycles.BR_III_PICKUP,
-                autoCycles.BR_END,
+                autoCycles.BR_I, // so i can push the trigger after i pick up these balls
+                autoCycles.BR_II,
+                autoCycles.BR_III_PICKUP,
+                // autoCycles.BR_END,
             }
         );
     }
