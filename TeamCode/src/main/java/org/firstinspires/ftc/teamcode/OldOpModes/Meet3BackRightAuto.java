@@ -28,6 +28,7 @@
  */
 
 package org.firstinspires.ftc.teamcode.OldOpModes;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
@@ -37,6 +38,7 @@ import org.firstinspires.ftc.teamcode.P;
 import org.firstinspires.ftc.teamcode.autoCycles;
 import org.firstinspires.ftc.teamcode.startingPoses;
 
+@Disabled
 @Autonomous(name="Meet 3: BR Auto", group="Robot")
 public class Meet3BackRightAuto extends OpMode {
 

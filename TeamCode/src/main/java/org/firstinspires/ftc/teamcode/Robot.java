@@ -8,6 +8,7 @@ import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -23,8 +24,7 @@ public class Robot {
     private final DcMotor intakeMotor;
     private final DcMotorEx outtakeLeftMotor;
     private final DcMotorEx outtakeRightMotor;
-    private final CRServo backServo;
-    private final CRServo gateServo;
+    private final Servo gateServo;
 
     public static final double WIDTH = 18;
     public static final double LENGTH = 18;
@@ -32,16 +32,18 @@ public class Robot {
     public static final double HL = LENGTH / 2;
 
     //------IMPORTANT SHOOTING VARIABLES------\\
-    private static final double SHOOTINTAKEPOWER = 0.85;
-    private static final double FRONTOUTTAKERPM = 3400;
-    private static final double BACKOUTTAKERPM = 3540;
+    private static final double SHOOTINTAKEPOWER = 0.7;
+    private static final double FRONTOUTTAKERPM = 3500;
+    private static final double BACKOUTTAKERPM = 3720;
+    private static final double GATESERVOPOWER = 1.0;
+    private static final int GATEROTATIONTIME = 2000;
     private static final int shootingTimeOnA = 350; // intake on
     private static final int shootingTimeOffA = 50; // intake off
     private static final int shootingTimeOnB = 600; // also the best
     private static final int shootingTimeOffB = 0; // also pretty good though could be shorter
-    private static final double gateOffPosition = 0.225;
-    private static final double gateOnPosition = 0.015;
-    private static final int gateTimeOn = 3000;
+    private static final double gateOffPosition = 0.4;
+    private static final double gateOnPosition = 0.0;
+    private static final int gateShootingTimeOn = 3000;
     
     //------MOTORS / SERVOS------\\
     // private static final double EMERGENCYOUTTAKERPM = 5500;
@@ -52,6 +54,7 @@ public class Robot {
     private static final double frontOuttakeAngularRate = toAngularRate(FRONTOUTTAKERPM, OUTTAKECPR);
     private static final double backOuttakeAngularRate = toAngularRate(BACKOUTTAKERPM, OUTTAKECPR);
     private static final double UPTOSPEEDTHRESHOLD = 0.99; // measuring velocity is not always accurate so this will be triggered
+    private static final double OVERSPEEDTHRESHOLD = 1.05; // measuring velocity is not always accurate so this will be triggered
 
     //------AUTO CONTROL------\\
     private autoCycles[] autoCycleList;
@@ -65,7 +68,7 @@ public class Robot {
     //------GAME PLAYING-------\\
     private static double SLEEPERRORS = 0;
     private Follower follower;
-    private boolean monitorThreads = true;
+    private boolean monitorThreads = false;
     private static boolean redAlliance;
     private int autoCycleNumber = 0;
     private int teleOpDriveState = 0;
@@ -73,7 +76,13 @@ public class Robot {
     private int teleOpShootState = 0;
     private boolean robotCentric = false;
     private boolean autoAimed = false;
-    
+
+    private boolean testMode = false;
+
+    public void setTestMode (boolean state) {
+        testMode = state;
+    }
+
     public Robot(HardwareMap hardwareMap, Telemetry telemetry, Gamepad gamepad1, Gamepad gamepad2, boolean _redAlliance) {
         this.hardwareMap = hardwareMap;
         this.telemetry = telemetry;
@@ -85,16 +94,19 @@ public class Robot {
         outtakeLeftMotor = (DcMotorEx) hardwareMap.get(DcMotor.class, "lo");
         outtakeRightMotor = (DcMotorEx) hardwareMap.get(DcMotor.class, "ro");
 
+        //TODO: SAVE AND PUSH THIS TO ROBOT AND GITHUB
+        outtakeLeftMotor.setVelocityPIDFCoefficients(12, 8, 0.01, 14);
+        outtakeRightMotor.setVelocityPIDFCoefficients(12, 8, 0.01, 14);
         // frontServo = hardwareMap.get(CRServo.class, "Front Servo");
-        backServo = null;//hardwareMap.get(CRServo.class, "bs");
-        gateServo = hardwareMap.get(CRServo.class, "gs");
-        setGateServoOld(false);
+        gateServo = hardwareMap.get(Servo.class, "gs");
+        // gateServo.setDirection(DcMotorSimple.Direction.REVERSE);
+        // setGateServoOld(false);
         setGateServo(false);
         // odometry = hardwareMap.get(GoBildaPinpointDriver.class, "odom");
 
         intakeMotor.setDirection(DcMotor.Direction.REVERSE);
-        outtakeLeftMotor.setDirection(DcMotor.Direction.REVERSE);
-        outtakeRightMotor.setDirection(DcMotor.Direction.FORWARD);
+        outtakeLeftMotor.setDirection(DcMotor.Direction.FORWARD);
+        outtakeRightMotor.setDirection(DcMotor.Direction.REVERSE);
 
         // backServo.setDirection(CRServo.Direction.REVERSE);
         // gateServo.setDirection(Servo.Direction.REVERSE);
@@ -103,18 +115,7 @@ public class Robot {
         outtakeRightMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
         telemetry.addData("Status", "Initialized");
-        telemetry.update()
-        ;
-    }
-
-    public void startMonitorThreads () {
-        Thread thread = new Thread(() -> {
-            while (monitorThreads) {
-                assert true;
-            }
-        });
-
-        thread.start();
+        telemetry.update();
     }
 
     public void setAutoCycleList(autoCycles[] autoCycleList) {
@@ -261,53 +262,53 @@ public class Robot {
 
         boolean outtakeOn = gamepad2.right_trigger > SENSITIVITY;
         boolean backShoot = gamepad2.right_bumper;
-
         setOuttake(outtakeOn, backShoot);
-
         boolean outtakeUpToSpeed = checkUpToSpeed(outtakeLeftMotor, backShoot) && checkUpToSpeed(outtakeRightMotor, backShoot);
-
-        if (teleOpShootState == 0 && gamepad2.y && outtakeUpToSpeed) {
-            teleOpShootState = 1;
-        }
 
         if (teleOpShootState == 0) {
             intakeOn = gamepad2.left_trigger > SENSITIVITY;
             intakeMotor.setPower(intakeOn ? INTAKEPOWER : 0);
 
-            // gateServoOn = gamepad2.y && outtakeUpToSpeed;
-            // setGateServoOld(gateServoOn);
+            if (gamepad2.y) {
+                teleOpShootState = 1;
+            }
+
+            else if (gamepad2.x) { // back feed
+                setBackfeed();
+            }
+
+            if (gamepad2.xWasReleased()) {
+                setIntake(false);
+                setGateServo(false);
+            }
+
+            setGateServo(false);
         }
 
         else if (teleOpShootState == 1) {
-            if (gamepad2.yWasReleased()) {
-                teleOpShootState = 0;
-            }
-            else if (outtakeUpToSpeed) {
+            if (outtakeUpToSpeed) {
                 teleOpShootState = 2;
-                Thread thread = new Thread(() -> {
-                    setIntakeSlow(true);
-                    while (teleOpShootState == 2) {
-                        try {
-                            setGateServo(true);
-                            /*setGateServoOld(true); Thread.sleep(shootingTimeOnB);
-                            setGateServoOld(false); Thread.sleep(shootingTimeOffB);
-                            setIntakeSlow(true); Thread.sleep(shootingTimeOnA);
-                            setIntakeSlow(false); Thread.sleep(shootingTimeOffA);*/
-                        } catch (Exception e) {
-                            SLEEPERRORS++;
-                        }
-                    }
-                    setIntakeSlow(false);
-                    setGateServo(false);
-                });
+            }
 
-                thread.start();
+            else if (!gamepad2.y) {
+                teleOpShootState = 0;
             }
         }
 
         else if (teleOpShootState == 2) {
             if (gamepad2.yWasReleased()) {
                 teleOpShootState = 0;
+                gateServoOn = false;
+                intakeOn = false;
+                setGateServo(false);
+                setIntakeSlow(false);
+            }
+
+            else {
+                setGateServo(true);
+                setIntakeSlow(true);
+                gateServoOn = true;
+                intakeOn = true;
             }
         }
 
@@ -379,23 +380,14 @@ public class Robot {
                 autoCycleState = -3;
 
                 try {
-                    for (int i = 0; i < 3; i++) {
-                        try {
-                            setGateServoOld(true); Thread.sleep(shootingTimeOnB);
-                            setGateServoOld(false); Thread.sleep(shootingTimeOffB);
-                            if (i < 2) {
-                                setIntakeSlow(true); Thread.sleep(shootingTimeOnA);
-                                setIntakeSlow(false); Thread.sleep(shootingTimeOffA);
-                            }
-                        } catch (Exception e) {
-                            SLEEPERRORS++;
-                        }
-                    }
+                    setGateServo(true);
+                    setIntakeSlow(true);
+                    Thread.sleep(gateShootingTimeOn);
                 } catch (Exception e) {
                     SLEEPERRORS++;
                 }
 
-                setGateServoOld(false);
+                setGateServo(false);
                 setIntakeSlow(false);
                 setOuttake(false, backShoot);
 
@@ -410,6 +402,7 @@ public class Robot {
         }
     }
 
+    // TODO: ADD HUMAN PLAYER PICKUP
     public void autoLoop () {
         follower.update();
 
@@ -805,7 +798,8 @@ public class Robot {
 
         follower.startTeleopDrive(true);
 
-        setGateServoOld(false);
+        // setGateServoOld(false);
+        setGateServo(false);
 
         monitorThreads = true;
     }
@@ -832,9 +826,11 @@ public class Robot {
         outtakeRightMotor.setVelocity(status ? angularRate : 0);
     }
 
-    @Deprecated
-    public void setBackServo (boolean status) {
-        backServo.setPower(status ? SERVOPOWER : 0);
+    public void setBackfeed () {
+        intakeMotor.setPower(-INTAKEPOWER);
+        // outtakeLeftMotor.setPower(-0.2);
+        // outtakeRightMotor.setPower(-0.2);
+        setGateServo(true);
     }
 
     @Deprecated
@@ -842,13 +838,14 @@ public class Robot {
         // gateServo.setPosition(status ? gateOnPosition : gateOffPosition);
     }
 
+
     public void setGateServo (boolean status) {
-        gateServo.setPower((status) ? 1 : -1);
+        gateServo.setPosition((status) ? gateOnPosition : gateOffPosition);
     }
 
     public boolean checkUpToSpeed (DcMotorEx motor, boolean backShoot) {
         double angularRate = (backShoot) ? backOuttakeAngularRate : frontOuttakeAngularRate;
-        return motor.getVelocity() >= UPTOSPEEDTHRESHOLD * angularRate;
+        return (motor.getVelocity() >= UPTOSPEEDTHRESHOLD * angularRate) && (motor.getVelocity() <= OVERSPEEDTHRESHOLD * angularRate);
     }
 
     public void updateAllTelemetry () {

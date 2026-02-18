@@ -67,7 +67,7 @@ public class Constants {
             .rightFrontMotorName("fr")
             .rightRearMotorName("br")
             .leftFrontMotorDirection(DcMotorSimple.Direction.REVERSE)
-            .leftRearMotorDirection(DcMotorSimple.Direction.REVERSE)
+            .leftRearMotorDirection(DcMotorSimple.Direction.FORWARD)
             .rightFrontMotorDirection(DcMotorSimple.Direction.FORWARD)
             .rightRearMotorDirection(DcMotorSimple.Direction.FORWARD)
             .useBrakeModeInTeleOp(true)
@@ -75,11 +75,11 @@ public class Constants {
             .yVelocity(50);
 
     public static PinpointConstants localizerConstants = new PinpointConstants()
-            .forwardPodY(3)
-            .strafePodX(-5.75)
+            .forwardPodY(0.25)
+            .strafePodX(3.25)
             .hardwareMapName("odom")
             .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED)
-            .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD);
+            .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED);
 
     public static PathConstraints pathConstraints = new PathConstraints(
             0.995,

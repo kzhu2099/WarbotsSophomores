@@ -31,12 +31,13 @@ package org.firstinspires.ftc.teamcode.CurrentOpModes;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.OldRobot;
 import org.firstinspires.ftc.teamcode.P;
 import org.firstinspires.ftc.teamcode.Robot;
 
-@Autonomous(name="Leagues: TeleOp", group="Robot")
+@TeleOp(name="Leagues: TeleOp", group="Robot")
 public class LeaguesTeleOp extends OpMode {
 
     private Robot robot;
@@ -57,7 +58,7 @@ public class LeaguesTeleOp extends OpMode {
     }
 
     public void start () {
-        P.setStartingPose(OldRobot.allStartingPoses[OldRobot.startingSelection]); // only temporary
+        P.setStartingPose(Robot.allStartingPoses[Robot.startingSelection]); // only temporary
         robot.start();
     }
 

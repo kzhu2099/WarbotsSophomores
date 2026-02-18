@@ -30,12 +30,14 @@
 
 package org.firstinspires.ftc.teamcode.OldOpModes;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.teamcode.OldRobot;
 import org.firstinspires.ftc.teamcode.P;
 
+@Disabled
 @TeleOp(name="Meet 3: TeleOp", group="OpMode")
 // @Disabled
 public class Meet3TeleOp extends OpMode {
