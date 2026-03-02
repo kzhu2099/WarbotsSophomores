@@ -37,8 +37,8 @@ import org.firstinspires.ftc.teamcode.Robot;
 import org.firstinspires.ftc.teamcode.autoCycles;
 import org.firstinspires.ftc.teamcode.startingPoses;
 
-@Autonomous(name="Leagues: BR Auto", group="Robot")
-public class LeaguesBRAuto extends OpMode {
+@Autonomous(name="Leagues: FL PRELOAD Auto", group="Robot")
+public class LeaguesFLPreloadAuto extends OpMode {
 
     private Robot robot;
 
@@ -48,19 +48,16 @@ public class LeaguesBRAuto extends OpMode {
     }
 
     public void init () {
-        robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2, true);
+        robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2, false);
         robot.init();
 
-        robot.setTriggerCycles(new int[] {2});
+        robot.setTriggerCycles(new int[] {-1});
 
         robot.setAutoCycleList(
             new autoCycles[] {
-                autoCycles.BR_INIT, // 0
-                autoCycles.BR_PRELOAD,
-                autoCycles.BR_II, // so i can push the trigger after i pick up these balls
-                autoCycles.BR_I,
-                autoCycles.BR_III,
-                autoCycles.BR_END,
+                autoCycles.FL_INIT,
+                autoCycles.FL_PRELOAD,
+                autoCycles.FL_END,
             }
         );
     }
@@ -70,7 +67,7 @@ public class LeaguesBRAuto extends OpMode {
     }
 
     public void start () {
-        P.setStartingPose(startingPoses.BR);
+        P.setStartingPose(startingPoses.FL);
         robot.start();
     }
 

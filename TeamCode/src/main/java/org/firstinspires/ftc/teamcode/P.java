@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode;
 import androidx.annotation.NonNull;
 
 import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
@@ -20,13 +21,18 @@ public class P {
     public static Pose BL_EndingPose;
     public static Pose FL_EndingPose;
 
+    public static Pose BR_ControlPose;
+    public static Pose FR_ControlPose;
+    public static Pose BL_ControlPose;
+    public static Pose FL_ControlPose;
+
     public static Pose R_TriggerPose;
     public static Pose L_TriggerPose;
     public static Pose R_ParkingPose;
     public static Pose L_ParkingPose;
 
     public static final double scoringDX = 12;
-    public static final double cycleEndDX = 48 + 24 - 12 - OldRobot.HL;
+    public static final double cycleEndDX = 48 + 24 - 8 - Robot.CENTERLENGTH;
     public static final double triggerPoseDX = 55;
     public static final double backScoringY = 18;
     public static final double frontScoringY = 72 + 12; // TODO: find this y
@@ -35,7 +41,7 @@ public class P {
     public static final double rowI = 36;
     public static final double rowII = 60;
     public static final double rowIII = 84;
-    public static final double rowTrigger = 72;
+    public static final double rowTrigger = 72 - Robot.CENTERLENGTH;
 
     public static PathChain BR_Preload;
     public static PathChain BR_End;
@@ -55,19 +61,19 @@ public class P {
                 break;
 
             case BR:
-                startingPose = new Pose (72 + 24, OldRobot.HL, Math.toRadians(270));
+                startingPose = new Pose (72 + 24, Robot.CENTERLENGTH, Math.toRadians(270));
                 break;
 
             case BL:
-                startingPose = new Pose (72 - 24, OldRobot.HL, Math.toRadians(270));
+                startingPose = new Pose (72 - 24, Robot.CENTERLENGTH, Math.toRadians(270));
                 break;
 
             case FR:
-                startingPose = new Pose (72 + 48 - OldRobot.HW, 144 - OldRobot.HL, Math.toRadians(90));
+                startingPose = new Pose (72 + 48 - Robot.CENTERWIDTH, 144 - Robot.CENTERLENGTH, Math.toRadians(90));
                 break;
 
             case FL:
-                startingPose = new Pose (72 - 48 + OldRobot.HW, 144 - OldRobot.HL, Math.toRadians(90));
+                startingPose = new Pose (72 - 48 + Robot.CENTERWIDTH, 144 - Robot.CENTERLENGTH, Math.toRadians(90));
                 break;
         }
     }
@@ -89,13 +95,18 @@ public class P {
         BL_ScoringPose = new Pose (72 - scoringDX, backScoringY, backAngle);
         FL_ScoringPose = new Pose (72 - scoringDX, frontScoringY, frontAngle);
 
-        BR_EndingPose = new Pose (72 + 36, 12, Math.toRadians(270));
-        BL_EndingPose = new Pose (72 - 36, 12, Math.toRadians(270));
-        FR_EndingPose = new Pose (72 + 12, 144 - 12, Math.toRadians(60));
-        FL_EndingPose = new Pose (72 - 12, 144 - 12, Math.toRadians(180 - 60));
+        BR_EndingPose = new Pose (72 + 40, 12, Math.toRadians(270));
+        BL_EndingPose = new Pose (72 - 40, 12, Math.toRadians(270));
+        FR_EndingPose = new Pose (72 + 15, 144 - 12, Math.toRadians(60));
+        FL_EndingPose = new Pose (72 - 15, 144 - 12, Math.toRadians(180 - 60));
 
-        R_TriggerPose = new Pose (72 + triggerPoseDX, rowTrigger, Math.toRadians(0));
-        L_TriggerPose = new Pose (72 - triggerPoseDX, rowTrigger, Math.toRadians(180));
+        BR_ControlPose = new Pose (72 + 18, 36, Math.toRadians(270));
+        BL_ControlPose = new Pose (72 - 18, 36, Math.toRadians(270));
+        FR_ControlPose = new Pose (72 + 6, 144 - 36, Math.toRadians(60));
+        FL_ControlPose = new Pose (72 - 6, 144 - 36, Math.toRadians(180 - 60));
+
+        R_TriggerPose = new Pose (72 + triggerPoseDX, rowTrigger, Math.toRadians(180));
+        L_TriggerPose = new Pose (72 - triggerPoseDX, rowTrigger, Math.toRadians(0));
 
         R_ParkingPose = new Pose (72 + 33, 33, Math.toRadians(270));
         L_ParkingPose = new Pose (72 - 33, 33, Math.toRadians(270));
@@ -105,43 +116,52 @@ public class P {
         BR_Preload = follower.pathBuilder()
                 .addPath(new BezierLine(P.startingPose, P.BR_ScoringPose))
                 .setConstantHeadingInterpolation(P.BR_ScoringPose.getHeading())
+                .setTranslationalConstraint(3)
+                .setHeadingConstraint(Math.toRadians(10))
+                .setTimeoutConstraint(0.7)
                 .build();
 
         BR_End = follower.pathBuilder()
-                .addPath(new BezierLine(P.startingPose, P.BR_EndingPose))
+                .addPath(new BezierCurve(P.startingPose, P.BR_ControlPose, P.BR_EndingPose))
                 .setLinearHeadingInterpolation(P.startingPose.getHeading(), P.BR_EndingPose.getHeading())
                 .build();
 
         FR_Preload = follower.pathBuilder()
                 .addPath(new BezierLine(P.startingPose, P.FR_ScoringPose))
                 .setLinearHeadingInterpolation(P.startingPose.getHeading(), P.FR_ScoringPose.getHeading())
+                .setTranslationalConstraint(3)
+                .setHeadingConstraint(Math.toRadians(10))
+                .setTimeoutConstraint(0.7)
                 .build();
 
         FR_End = follower.pathBuilder()
-                .addPath(new BezierLine(P.startingPose, P.FR_EndingPose))
+                .addPath(new BezierCurve(P.startingPose, P.FR_ControlPose, P.FR_EndingPose))
                 .setLinearHeadingInterpolation(P.startingPose.getHeading(), P.FR_EndingPose.getHeading())
                 .build();
 
         BL_Preload = follower.pathBuilder()
                 .addPath(new BezierLine(P.startingPose, P.BL_ScoringPose))
                 .setLinearHeadingInterpolation(P.startingPose.getHeading(), P.BL_ScoringPose.getHeading())
-                // .setTranslationalConstraint(2)
-                // .setHeadingConstraint(Math.toRadians(10))
-                // .setTimeoutConstraint(0.7)
+                .setTranslationalConstraint(3)
+                .setHeadingConstraint(Math.toRadians(10))
+                .setTimeoutConstraint(0.7)
                 .build();
 
         BL_End = follower.pathBuilder()
-                .addPath(new BezierLine(P.startingPose, P.BL_EndingPose))
+                .addPath(new BezierCurve(P.startingPose, P.BL_ControlPose, P.BL_EndingPose))
                 .setLinearHeadingInterpolation(P.startingPose.getHeading(), P.BL_EndingPose.getHeading())
                 .build();
 
         FL_Preload = follower.pathBuilder()
                 .addPath(new BezierLine(P.startingPose, P.FL_ScoringPose))
                 .setLinearHeadingInterpolation(P.startingPose.getHeading(), P.FL_ScoringPose.getHeading())
+                .setTranslationalConstraint(3)
+                .setHeadingConstraint(Math.toRadians(10))
+                .setTimeoutConstraint(0.7)
                 .build();
 
         FL_End = follower.pathBuilder()
-                .addPath(new BezierLine(P.startingPose, P.FL_EndingPose))
+                .addPath(new BezierCurve(P.startingPose, P.FL_ControlPose, P.FL_EndingPose))
                 .setLinearHeadingInterpolation(P.startingPose.getHeading(), P.FL_EndingPose.getHeading())
                 .build();
     }

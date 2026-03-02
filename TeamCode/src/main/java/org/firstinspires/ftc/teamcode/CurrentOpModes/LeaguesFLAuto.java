@@ -48,19 +48,19 @@ public class LeaguesFLAuto extends OpMode {
     }
 
     public void init () {
-        robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2, true);
+        robot = new Robot(hardwareMap, telemetry, gamepad1, gamepad2, false);
         robot.init();
 
-        robot.setTriggerCycles(new int[] {-1});
+        robot.setTriggerCycles(new int[] {2});
 
         robot.setAutoCycleList(
             new autoCycles[] {
                 autoCycles.FL_INIT,
-                autoCycles.FL_PRELOAD, // 0
-                autoCycles.FL_III, // so i can push the trigger after i pick up these balls
-                autoCycles.FL_II,
-                autoCycles.FL_I_PICKUP,
-                // autoCycles.BL_END,
+                autoCycles.FL_PRELOAD, // 1
+                autoCycles.FL_II, // so i can push the trigger after i pick up these balls
+                autoCycles.FL_III,
+                autoCycles.FL_I,
+                autoCycles.FL_END,
             }
         );
     }

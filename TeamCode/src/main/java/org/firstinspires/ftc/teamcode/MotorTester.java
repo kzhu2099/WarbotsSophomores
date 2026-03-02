@@ -72,6 +72,8 @@ public class MotorTester extends OpMode {
         fl = hardwareMap.get(DcMotor.class, "fl");
 
         fl.setDirection(DcMotorSimple.Direction.REVERSE);
+        bl.setDirection(DcMotorSimple.Direction.REVERSE);
+        fr.setDirection(DcMotorSimple.Direction.REVERSE);
     }
 
     public void init_loop () {
